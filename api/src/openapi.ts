@@ -36,6 +36,25 @@ export const openapi = {
         responses: { 200: { description: "Clientes com crédito disponível" } },
       },
     },
+    "/clientes/{clienteId}/produtos": {
+      get: {
+        summary: "Busca produtos com o preço da tabela do cliente",
+        parameters: [
+          parametroDeCaminho("clienteId", "C001"),
+          {
+            name: "busca",
+            in: "query",
+            description: "Palavras da descrição, marca ou SKU; só dígitos busca pelo EAN",
+            schema: { type: "string" },
+            example: "arroz",
+          },
+        ],
+        responses: {
+          200: { description: "Até 20 produtos, com disponibilidade e preço ou motivo" },
+          400: respostaDeErro("Input inválido"),
+        },
+      },
+    },
     "/pedidos": {
       post: {
         summary: "Envia um pedido",

@@ -4,6 +4,7 @@ import { ZodError } from "zod";
 import { openapi } from "./openapi.js";
 import { PedidoInvalidoError } from "./pedidos/pedidos.errors.js";
 import { pedidosRoutes } from "./pedidos/pedidos.routes.js";
+import { produtosRoutes } from "./produtos/produtos.routes.js";
 import { vendedoresRoutes } from "./vendedores/vendedores.routes.js";
 
 export const app = express();
@@ -11,6 +12,7 @@ export const app = express();
 app.use(express.json());
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(openapi));
 app.use(vendedoresRoutes);
+app.use(produtosRoutes);
 app.use(pedidosRoutes);
 
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
