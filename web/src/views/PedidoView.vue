@@ -58,6 +58,7 @@ onMounted(async () => {
       <h2>Resumo</h2>
       <ResumoPedido
         :itens="pedido.itens(clienteId)"
+        :cliente="cliente"
         :alcada="sessao.vendedor?.alcada_desconto_percentual ?? 0"
       />
     </template>

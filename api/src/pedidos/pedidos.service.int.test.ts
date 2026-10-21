@@ -71,6 +71,29 @@ describe("enviarPedido", () => {
     await expect(envio).rejects.toMatchObject({ message: "fora_do_multiplo", produto_id: "P006" });
   });
 
+  it("rejeita pedido abaixo do mínimo", async () => {
+    const envio = enviarPedido(db, {
+      vendedor_id: "V01",
+      cliente_id: "C001",
+      itens: [{ produto_id: "P001", quantidade: 10, desconto_percentual: 0 }],
+    });
+
+    await expect(envio).rejects.toThrow("abaixo_do_pedido_minimo");
+  });
+
+  it("rejeita desconto em mais de um item", async () => {
+    const envio = enviarPedido(db, {
+      vendedor_id: "V01",
+      cliente_id: "C001",
+      itens: [
+        { produto_id: "P001", quantidade: 10, desconto_percentual: 2 },
+        { produto_id: "P006", quantidade: 40, desconto_percentual: 3 },
+      ],
+    });
+
+    await expect(envio).rejects.toThrow("desconto_em_mais_de_um_produto");
+  });
+
   it("rejeita pedido acima do crédito sem gravar nada", async () => {
     const envio = enviarPedido(db, {
       vendedor_id: "V01",
