@@ -53,6 +53,16 @@ export const openapi = {
         },
       },
     },
+    "/vendedores/{id}/clientes/{clienteId}": {
+      get: {
+        summary: "Cliente da carteira do vendedor",
+        parameters: [parametroDeCaminho("id", "V01"), parametroDeCaminho("clienteId", "C001")],
+        responses: {
+          200: resposta("Cliente com crédito disponível", clienteCarteiraSchema),
+          404: respostaDeErro("Cliente inexistente ou fora da carteira"),
+        },
+      },
+    },
     "/clientes/{clienteId}/produtos": {
       get: {
         summary: "Busca produtos com o preço da tabela do cliente",

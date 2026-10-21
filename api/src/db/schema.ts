@@ -147,3 +147,4 @@ export const pedidos_itens = pgTable(
 export type Cliente = typeof clientes.$inferSelect;
 export type Produto = typeof produtos.$inferSelect;
 export type PedidoItem = typeof pedidos_itens.$inferSelect;
+export type TabelaPreco = typeof tabelas_preco.$inferSelect;
