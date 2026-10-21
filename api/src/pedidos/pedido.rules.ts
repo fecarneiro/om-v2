@@ -3,6 +3,7 @@ import type { Cliente, PedidoItem, Produto } from "../db/schema.js";
 
 // Types
 type ItemDoPedido = Pick<PedidoItem, "quantidade" | "preco_unidade">;
+type ItemComDesconto = Pick<PedidoItem, "quantidade" | "preco_unidade" | "desconto_percentual">;
 
 type DisponibilidadeProduto =
   | { disponivel: true; preco_unidade: string }
@@ -70,5 +71,26 @@ export function totalBrutoDoPedido(itens: ItemDoPedido[]) {
 
 export function validarPedidoMinimo(itens: ItemDoPedido[]) {
   if (totalBrutoDoPedido(itens).lt(PEDIDO_MINIMO)) return "abaixo_do_pedido_minimo";
+  return null;
+}
+
+export function totalLiquidoDoItem(item: ItemComDesconto) {
+  const fator = new Big(100).minus(item.desconto_percentual).div(100);
+  return totalBrutoDoItem(item).times(fator).round(2, Big.roundHalfUp);
+}
+
+export function totalLiquidoDoPedido(itens: ItemComDesconto[]) {
+  return itens.reduce((total, item) => total.plus(totalLiquidoDoItem(item)), new Big(0));
+}
+
+export function creditoDisponivel(cliente: Pick<Cliente, "limite_credito" | "credito_utilizado">) {
+  return new Big(cliente.limite_credito).minus(cliente.credito_utilizado);
+}
+
+export function validarCredito(
+  cliente: Pick<Cliente, "limite_credito" | "credito_utilizado">,
+  itens: ItemComDesconto[],
+) {
+  if (totalLiquidoDoPedido(itens).gt(creditoDisponivel(cliente))) return "credito_insuficiente";
   return null;
 }

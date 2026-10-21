@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  creditoDisponivel,
   definirStatusEnvio,
   disponibilidadeDoProduto,
   pertenceACarteira,
   tabelaDoCliente,
   totalBrutoDoItem,
   totalBrutoDoPedido,
+  totalLiquidoDoItem,
+  totalLiquidoDoPedido,
+  validarCredito,
   validarDescontos,
   validarPedidoMinimo,
   validarQuantidade,
@@ -205,5 +209,74 @@ describe("validarPedidoMinimo", () => {
 
   it("rejeita pedido vazio", () => {
     expect(validarPedidoMinimo([])).toBe("abaixo_do_pedido_minimo");
+  });
+});
+
+describe("totalLiquidoDoItem", () => {
+  it("mantém o bruto quando não há desconto", () => {
+    expect(
+      totalLiquidoDoItem({ quantidade: 6, preco_unidade: "10.00", desconto_percentual: 0 }).toFixed(
+        2,
+      ),
+    ).toBe("60.00");
+  });
+
+  it("aplica o desconto percentual sobre o bruto", () => {
+    expect(
+      totalLiquidoDoItem({
+        quantidade: 12,
+        preco_unidade: "26.90",
+        desconto_percentual: 5,
+      }).toFixed(2),
+    ).toBe("306.66");
+  });
+
+  it("arredonda para centavos com meio para cima", () => {
+    expect(
+      totalLiquidoDoItem({ quantidade: 1, preco_unidade: "0.50", desconto_percentual: 1 }).toFixed(
+        2,
+      ),
+    ).toBe("0.50");
+  });
+});
+
+describe("totalLiquidoDoPedido", () => {
+  it("soma os totais líquidos dos itens", () => {
+    expect(
+      totalLiquidoDoPedido([
+        { quantidade: 12, preco_unidade: "26.90", desconto_percentual: 5 },
+        { quantidade: 6, preco_unidade: "10.00", desconto_percentual: 0 },
+      ]).toFixed(2),
+    ).toBe("366.66");
+  });
+});
+
+describe("creditoDisponivel", () => {
+  it("é o limite menos o utilizado", () => {
+    expect(
+      creditoDisponivel({ limite_credito: "1000.00", credito_utilizado: "730.10" }).toFixed(2),
+    ).toBe("269.90");
+  });
+});
+
+describe("validarCredito", () => {
+  const itens = [{ quantidade: 10, preco_unidade: "30.00", desconto_percentual: 10 }];
+
+  it("aceita pedido igual ao crédito disponível", () => {
+    expect(
+      validarCredito({ limite_credito: "1000.00", credito_utilizado: "730.00" }, itens),
+    ).toBeNull();
+  });
+
+  it("rejeita pedido acima do crédito disponível", () => {
+    expect(validarCredito({ limite_credito: "1000.00", credito_utilizado: "730.01" }, itens)).toBe(
+      "credito_insuficiente",
+    );
+  });
+
+  it("rejeita qualquer pedido de cliente com crédito zerado", () => {
+    expect(validarCredito({ limite_credito: "500.00", credito_utilizado: "500.00" }, itens)).toBe(
+      "credito_insuficiente",
+    );
   });
 });
