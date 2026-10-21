@@ -15,6 +15,13 @@
       "when": 1792592336139,
       "tag": "0001_unaccent",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792594688435,
+      "tag": "0002_indices",
+      "breakpoints": true
     }
   ]
 }

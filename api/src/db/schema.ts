@@ -4,6 +4,7 @@ import {
   boolean,
   check,
   date,
+  index,
   integer,
   numeric,
   pgEnum,
@@ -69,6 +70,7 @@ export const clientes = pgTable(
       sql`${t.uf} IN ('AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA',
                       'PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO')`,
     ),
+    index("clientes_vendedor_id_idx").on(t.vendedor_id),
   ],
 );
 
@@ -86,7 +88,10 @@ export const produtos = pgTable(
     venda_somente_multiplo: boolean().notNull(),
     ativo: boolean().notNull(),
   },
-  (t) => [check("produtos_fator_embalagem_check", sql`${t.fator_embalagem} > 0`)],
+  (t) => [
+    check("produtos_fator_embalagem_check", sql`${t.fator_embalagem} > 0`),
+    index("produtos_ean_idx").on(t.ean.op("text_pattern_ops")),
+  ],
 );
 
 export const tabelas_preco = pgTable("tabelas_preco", {
@@ -107,17 +112,21 @@ export const tabelas_preco_itens = pgTable(
   ],
 );
 
-export const pedidos = pgTable("pedidos", {
-  id: text().primaryKey(),
-  cliente_id: text()
-    .notNull()
-    .references(() => clientes.id),
-  vendedor_id: text()
-    .notNull()
-    .references(() => vendedores.id),
-  data: date().notNull(),
-  status: statusPedidoEnum().notNull(),
-});
+export const pedidos = pgTable(
+  "pedidos",
+  {
+    id: text().primaryKey(),
+    cliente_id: text()
+      .notNull()
+      .references(() => clientes.id),
+    vendedor_id: text()
+      .notNull()
+      .references(() => vendedores.id),
+    data: date().notNull(),
+    status: statusPedidoEnum().notNull(),
+  },
+  (t) => [index("pedidos_cliente_id_data_idx").on(t.cliente_id, t.data)],
+);
 
 export const pedidos_itens = pgTable(
   "pedidos_itens",
