@@ -9,6 +9,14 @@ export function emUnidades(item: ItemPedido) {
   };
 }
 
+export function paraEnvio(item: ItemPedido) {
+  return {
+    produto_id: item.produto.id,
+    quantidade: emUnidades(item).quantidade,
+    desconto_percentual: item.desconto_percentual,
+  };
+}
+
 export function validarEmbalagens(item: ItemPedido) {
   return validarQuantidade(item.produto, emUnidades(item).quantidade);
 }

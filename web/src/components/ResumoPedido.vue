@@ -14,7 +14,13 @@ import { MENSAGENS } from "@/pedido/mensagens";
 import type { ItemPedido } from "@/stores/pedido";
 import { formatarMoeda } from "@/utils/moeda";
 
-const props = defineProps<{ itens: ItemPedido[]; cliente: ClienteCarteira; alcada: number }>();
+const props = defineProps<{
+  itens: ItemPedido[];
+  cliente: ClienteCarteira;
+  alcada: number;
+  enviando: boolean;
+  erroEnvio: string | null;
+}>();
 const emit = defineEmits<{ enviar: [] }>();
 
 const itensEmUnidades = computed(() => props.itens.filter(itemValido).map(emUnidades));
@@ -48,7 +54,8 @@ const bloqueios = computed(() => bloqueiosDoPedido(props.itens, props.cliente));
     </li>
   </ul>
 
-  <button type="button" :disabled="bloqueios.length > 0" @click="emit('enviar')">
-    Enviar pedido
+  <button type="button" :disabled="bloqueios.length > 0 || enviando" @click="emit('enviar')">
+    {{ enviando ? "Enviando..." : "Enviar pedido" }}
   </button>
+  <p v-if="erroEnvio">{{ erroEnvio }}</p>
 </template>

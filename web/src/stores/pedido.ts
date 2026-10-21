@@ -38,9 +38,13 @@ export const usePedidoStore = defineStore("pedido", () => {
     );
   }
 
+  function esvaziar(clienteId: string) {
+    itensPorCliente.value[clienteId] = [];
+  }
+
   function limpar() {
     itensPorCliente.value = {};
   }
 
-  return { itens, adicionar, alterarEmbalagens, alterarDesconto, remover, limpar };
+  return { itens, adicionar, alterarEmbalagens, alterarDesconto, remover, esvaziar, limpar };
 });
