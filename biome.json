@@ -8,6 +8,9 @@
   "files": {
     "includes": ["**", "!api/src/db/seed.json", "!api/drizzle"]
   },
+  "html": {
+    "experimentalFullSupportEnabled": true
+  },
   "formatter": {
     "indentStyle": "space",
     "indentWidth": 2,

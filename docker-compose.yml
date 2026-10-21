@@ -50,5 +50,19 @@ services:
       db:
         condition: service_healthy
 
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+    environment:
+      API_URL: http://api:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./web/src:/app/web/src
+      - ./contracts/src:/app/contracts/src
+    depends_on:
+      - api
+
 volumes:
   db-data:
