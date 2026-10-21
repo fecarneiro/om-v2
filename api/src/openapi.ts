@@ -1,5 +1,11 @@
-import { novoPedidoSchema } from "contracts/schemas";
-import { z } from "zod";
+import {
+  clienteCarteiraSchema,
+  novoPedidoSchema,
+  pedidoEnviadoSchema,
+  produtoBuscaSchema,
+  vendedorSchema,
+} from "contracts/schemas";
+import { type ZodType, z } from "zod";
 
 const erro = {
   type: "object",
@@ -9,6 +15,13 @@ const erro = {
 const respostaDeErro = (description: string) => ({
   description,
   content: { "application/json": { schema: erro } },
+});
+
+const resposta = (description: string, schema: ZodType) => ({
+  description,
+  content: {
+    "application/json": { schema: z.toJSONSchema(schema, { target: "openapi-3.0" }) },
+  },
 });
 
 const parametroDeCaminho = (name: string, example: string) => ({
@@ -26,14 +39,18 @@ export const openapi = {
     "/vendedores": {
       get: {
         summary: "Lista os vendedores (login simulado)",
-        responses: { 200: { description: "Vendedores com a alçada de desconto" } },
+        responses: {
+          200: resposta("Vendedores com a alçada de desconto", vendedorSchema.array()),
+        },
       },
     },
     "/vendedores/{id}/clientes": {
       get: {
         summary: "Carteira do vendedor",
         parameters: [parametroDeCaminho("id", "V01")],
-        responses: { 200: { description: "Clientes com crédito disponível" } },
+        responses: {
+          200: resposta("Clientes com crédito disponível", clienteCarteiraSchema.array()),
+        },
       },
     },
     "/clientes/{clienteId}/produtos": {
@@ -50,7 +67,10 @@ export const openapi = {
           },
         ],
         responses: {
-          200: { description: "Até 20 produtos, com disponibilidade e preço ou motivo" },
+          200: resposta(
+            "Até 20 produtos, com disponibilidade e preço ou motivo",
+            produtoBuscaSchema.array(),
+          ),
           400: respostaDeErro("Input inválido"),
         },
       },
@@ -72,7 +92,7 @@ export const openapi = {
           },
         },
         responses: {
-          201: { description: "Pedido gravado, com status e total" },
+          201: resposta("Pedido gravado, com status e total", pedidoEnviadoSchema),
           400: respostaDeErro("JSON ou input inválido"),
           422: respostaDeErro("Regra de negócio violada (produto_id quando o erro é de um item)"),
         },
