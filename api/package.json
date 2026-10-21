@@ -11,6 +11,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/run-seed.ts",
+    "db:setup": "tsx src/db/setup.ts",
     "db:studio": "drizzle-kit studio"
   },
   "packageManager": "pnpm@12.11.2",
