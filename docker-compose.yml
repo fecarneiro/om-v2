@@ -16,5 +16,22 @@ services:
       timeout: 3s
       retries: 15
 
+  db-test:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: order_manager
+      POSTGRES_PASSWORD: order_manager
+      POSTGRES_DB: order_manager_test
+    command: postgres -c timezone=America/Sao_Paulo
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U order_manager"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
 volumes:
   db-data:

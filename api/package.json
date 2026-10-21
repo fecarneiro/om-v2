@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run --config tests/vitest.config.ts",
+    "test:int": "vitest run --config tests/vitest.int.config.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/db/run-seed.ts",
@@ -14,7 +15,8 @@
   "dependencies": {
     "big.js": "^7.0.1",
     "drizzle-orm": "^0.45.4",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/big.js": "^7.0.0",
