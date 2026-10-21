@@ -39,21 +39,8 @@ docker compose
 
 ---
 # Notes
-- Assumir estoque "infinito"
-- Desconto: por produto ou por pedido?
-  - Item (produto)
-- Repetir pedido -> `pode esbarrar em ativo false`
-  - Poderia nesse caso ter uma "recomendação similares"
-- Existe 1 supervisor no seed, mas antecipar "N"
-- Precisa do enum "aguardando aprovação" , "aprovado"
+
 - preco_unidade é por produto e não embalagem
-- crédito disponível = limite - utilizado
-- todos produtos aparecem na busca
-  - mas mostram disponivel/nao disponivel
-- Produtos ativos deveriam ter preço em todas tabelas (expectativa, não regra)
-  - existe um que esta inativo e sem constar em uma das tabelas
-- ⭐⭐⭐ INDEXES
-- Interessante mostrar no front os creditos disponiveis daquele cliente.
 
 # Assumptions
 - Alçada Desconto
@@ -76,9 +63,18 @@ preços diferentes em tabelas diferentes."
   - Sem regras no banco: uma nova tabela de preços inativaria temporariamente todos os produtos.
 - Produto inativo e sem preço ao mesmo tempo: o motivo exibido é `produto_inativo` (inatividade prevalece).
 - Status `aguardando_aprovação` "reserva" os créditos consumidos do cliente (conta como consumido)
+-  API falha no primeiro erro; quem lista todos os bloqueios é o front; com sincronização offline, juntaríamos os erros por item
+- Estoque "infinito" e o que dita a regra é o status disponível/ indisponível daquele produto.
+
+# Decisions
+- Proxy do Vite em vez de CORS: o front chama `/api` e o Vite repassa para a API, então fica tudo na mesma origem: sem configurar CORS, sem preflight e sem mexer na API. Só vale em dev. Em produção, um nginx faria o mesmo proxy.
+- Sessão simulada no `localStorage`: guarda só o vendedor escolhido (nada sensível), sobrevive ao F5 e funciona offline. Sem auth, a API confia no `vendedor_id` enviado. Num login real, eu usaria um cookie `httpOnly` e a API tiraria o vendedor da sessão.
+- Listagem simples na view de carteira de clientes.
+- Rotas escopadas pelo vendedor na URL (`/vendedores/:id/clientes/:clienteId`): sem auth, é a URL que garante que o vendedor só vê a própria carteira. Num login real, o vendedor viria da sessão e a rota seria `/clientes/:id`.
+- A busca de produtos (`/clientes/:clienteId/produtos`) não checa a carteira e expõe a tabela de preço de qualquer cliente. Aceitei por serem só preços, sem dados do cliente; com auth, entraria a mesma checagem.
+- Não considerado o fato de um produto ficar indisponível ou então a tabela_preco de um cliente mudar durante a construção de um pedido.
 
 # Observações no seed.json
-
 - Cliente sem tabela de preço
 - EAN (cód de barras) duplicado
   - Não pode ser UNIQUE (por enquanto)

@@ -1,0 +1,18 @@
+import { validarDesconto, validarQuantidade } from "contracts/rules";
+import type { ItemPedido } from "@/stores/pedido";
+
+export function emUnidades(item: ItemPedido) {
+  return {
+    quantidade: item.embalagens * item.produto.fator_embalagem,
+    preco_unidade: item.produto.preco_unidade,
+    desconto_percentual: item.desconto_percentual,
+  };
+}
+
+export function validarEmbalagens(item: ItemPedido) {
+  return validarQuantidade(item.produto, emUnidades(item).quantidade);
+}
+
+export function itemValido(item: ItemPedido) {
+  return validarEmbalagens(item) === null && validarDesconto(item.desconto_percentual) === null;
+}

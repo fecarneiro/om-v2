@@ -1,6 +1,7 @@
 import type { Vendedor } from "contracts/schemas";
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import { usePedidoStore } from "./pedido";
 
 const CHAVE = "sessao.vendedor";
 
@@ -14,6 +15,7 @@ export const useSessaoStore = defineStore("sessao", () => {
   }
 
   function sair() {
+    usePedidoStore().limpar();
     vendedor.value = null;
     localStorage.removeItem(CHAVE);
   }
