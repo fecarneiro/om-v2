@@ -16,7 +16,6 @@ import { UNIDADES_VENDA } from "../domain/unidade-venda.js";
 
 // Helpers
 const dinheiro = () => numeric({ precision: 12, scale: 2 });
-const percentual = () => numeric({ precision: 5, scale: 2 });
 const checkPercentual = (nome: string, coluna: AnyPgColumn) =>
   check(nome, sql`${coluna} BETWEEN 0 AND 100`);
 
@@ -38,7 +37,7 @@ export const vendedores = pgTable(
     supervisor_id: text()
       .notNull()
       .references(() => supervisores.id),
-    alcada_desconto_percentual: percentual().notNull(),
+    alcada_desconto_percentual: integer().notNull(),
   },
   (t) => [
     checkPercentual("vendedores_alcada_desconto_percentual_check", t.alcada_desconto_percentual),
@@ -127,7 +126,7 @@ export const pedidos_itens = pgTable(
     produto_id: text().references(() => produtos.id),
     quantidade: integer().notNull(),
     preco_unidade: dinheiro().notNull(),
-    desconto_percentual: percentual().notNull().default("0"),
+    desconto_percentual: integer().notNull().default(0),
   },
   (t) => [
     primaryKey({ columns: [t.pedido_id, t.produto_id] }),
@@ -136,3 +135,7 @@ export const pedidos_itens = pgTable(
     checkPercentual("pedidos_itens_desconto_percentual_check", t.desconto_percentual),
   ],
 );
+
+export type Cliente = typeof clientes.$inferSelect;
+export type Produto = typeof produtos.$inferSelect;
+export type PedidoItem = typeof pedidos_itens.$inferSelect;
