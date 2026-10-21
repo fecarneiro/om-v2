@@ -1,3 +1,8 @@
+packages:
+  - api
+  - web
+  - contracts
+
 allowBuilds:
   esbuild: true
   "@scarf/scarf": false

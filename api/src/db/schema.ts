@@ -1,3 +1,4 @@
+import { STATUS_PEDIDO, UNIDADES_VENDA } from "contracts/constants";
 import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
@@ -12,8 +13,6 @@ import {
   primaryKey,
   text,
 } from "drizzle-orm/pg-core";
-import { STATUS_PEDIDO } from "../domain/status-pedido.js";
-import { UNIDADES_VENDA } from "../domain/unidade-venda.js";
 
 // Helpers
 const dinheiro = () => numeric({ precision: 12, scale: 2 });

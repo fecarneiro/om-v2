@@ -1,12 +1,17 @@
+import { disponibilidadeDoProduto, tabelaDoCliente } from "contracts/rules";
+import type { ProdutoBusca } from "contracts/schemas";
 import { and, eq, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { clientes, produtos, tabelas_preco_itens } from "../db/schema.js";
-import { disponibilidadeDoProduto, tabelaDoCliente } from "../pedidos/pedido.rules.js";
 
 const textoBuscavel = sql`unaccent(${produtos.descricao} || ' ' || coalesce(${produtos.marca}, '') || ' ' || ${produtos.sku})`;
 
 // TODO: ponderar índice pg_trgm ou tsvector se o catálogo crescer
-export async function buscarProdutos(db: Db, clienteId: string, busca: string) {
+export async function buscarProdutos(
+  db: Db,
+  clienteId: string,
+  busca: string,
+): Promise<ProdutoBusca[]> {
   const [cliente] = await db.select().from(clientes).where(eq(clientes.id, clienteId));
   if (!cliente) return [];
 

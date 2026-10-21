@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  acimaDaAlcada,
   creditoDisponivel,
   definirStatusEnvio,
   disponibilidadeDoProduto,
+  embalagensMinimas,
   pertenceACarteira,
   tabelaDoCliente,
   totalBrutoDoItem,
@@ -10,10 +12,11 @@ import {
   totalLiquidoDoItem,
   totalLiquidoDoPedido,
   validarCredito,
+  validarDesconto,
   validarDescontos,
   validarPedidoMinimo,
   validarQuantidade,
-} from "./pedido.rules.js";
+} from "./pedidos.rules.js";
 
 const mercadinhoSaoJose = { vendedor_id: "V01" };
 
@@ -31,14 +34,14 @@ describe("tabelaDoCliente", () => {
   it("usa a tabela vinculada ao cliente", () => {
     expect(tabelaDoCliente({ tabela_preco_id: "TP02" })).toEqual({
       tabela_preco_id: "TP02",
-      usa_tabela_padrao: false,
+      tabela_preco_pendente: false,
     });
   });
 
   it("usa a tabela padrão quando o cliente não tem tabela", () => {
     expect(tabelaDoCliente({ tabela_preco_id: null })).toEqual({
       tabela_preco_id: "TP01",
-      usa_tabela_padrao: true,
+      tabela_preco_pendente: true,
     });
   });
 });
@@ -278,5 +281,36 @@ describe("validarCredito", () => {
     expect(validarCredito({ limite_credito: "500.00", credito_utilizado: "500.00" }, itens)).toBe(
       "credito_insuficiente",
     );
+  });
+});
+
+describe("embalagensMinimas", () => {
+  it("exige 1 embalagem quando o produto não é vendido só em múltiplos", () => {
+    expect(embalagensMinimas({ venda_somente_multiplo: false })).toBe(1);
+  });
+
+  it("exige 2 embalagens quando o produto é vendido só em múltiplos", () => {
+    expect(embalagensMinimas({ venda_somente_multiplo: true })).toBe(2);
+  });
+});
+
+describe("validarDesconto", () => {
+  it("aceita inteiros de 0 a 100", () => {
+    expect(validarDesconto(0)).toBeNull();
+    expect(validarDesconto(100)).toBeNull();
+  });
+
+  it("rejeita negativo, acima de 100, quebrado ou vazio", () => {
+    expect(validarDesconto(-1)).toBe("desconto_invalido");
+    expect(validarDesconto(101)).toBe("desconto_invalido");
+    expect(validarDesconto(2.5)).toBe("desconto_invalido");
+    expect(validarDesconto(Number.NaN)).toBe("desconto_invalido");
+  });
+});
+
+describe("acimaDaAlcada", () => {
+  it("considera a alçada inclusive", () => {
+    expect(acimaDaAlcada(5, 5)).toBe(false);
+    expect(acimaDaAlcada(6, 5)).toBe(true);
   });
 });

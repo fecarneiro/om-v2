@@ -1,7 +1,7 @@
+import { creditoDisponivel } from "contracts/rules";
 import { eq } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { clientes, vendedores } from "../db/schema.js";
-import { creditoDisponivel } from "../pedidos/pedido.rules.js";
 
 export function listarVendedores(db: Db) {
   return db.select().from(vendedores).orderBy(vendedores.nome);

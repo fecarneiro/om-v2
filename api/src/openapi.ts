@@ -1,5 +1,5 @@
+import { novoPedidoSchema } from "contracts/schemas";
 import { z } from "zod";
-import { novoPedidoSchema } from "./pedidos/pedidos.schema.js";
 
 const erro = {
   type: "object",

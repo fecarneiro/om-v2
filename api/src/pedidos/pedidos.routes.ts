@@ -1,6 +1,6 @@
+import { novoPedidoSchema } from "contracts/schemas";
 import { Router } from "express";
 import { db } from "../db/client.js";
-import { novoPedidoSchema } from "./pedidos.schema.js";
 import { enviarPedido } from "./pedidos.service.js";
 
 export const pedidosRoutes = Router();

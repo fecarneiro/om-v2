@@ -1,14 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { and, eq, inArray, sql } from "drizzle-orm";
-import type { Db } from "../db/client.js";
-import {
-  clientes,
-  pedidos,
-  pedidos_itens,
-  produtos,
-  tabelas_preco_itens,
-  vendedores,
-} from "../db/schema.js";
 import {
   definirStatusEnvio,
   disponibilidadeDoProduto,
@@ -19,11 +9,21 @@ import {
   validarDescontos,
   validarPedidoMinimo,
   validarQuantidade,
-} from "./pedido.rules.js";
+} from "contracts/rules";
+import type { NovoPedido, PedidoEnviado } from "contracts/schemas";
+import { and, eq, inArray, sql } from "drizzle-orm";
+import type { Db } from "../db/client.js";
+import {
+  clientes,
+  pedidos,
+  pedidos_itens,
+  produtos,
+  tabelas_preco_itens,
+  vendedores,
+} from "../db/schema.js";
 import { PedidoInvalidoError } from "./pedidos.errors.js";
-import type { NovoPedido } from "./pedidos.schema.js";
 
-export async function enviarPedido(db: Db, input: NovoPedido) {
+export async function enviarPedido(db: Db, input: NovoPedido): Promise<PedidoEnviado> {
   return db.transaction(async (tx) => {
     const [linha] = await tx
       .select({ cliente: clientes, vendedor: vendedores })

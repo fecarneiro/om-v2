@@ -1,18 +1,20 @@
 import Big from "big.js";
-import type { Cliente, PedidoItem, Produto } from "../db/schema.js";
+import { MINIMO_EMBALAGENS, PEDIDO_MINIMO, TABELA_PADRAO_FALLBACK } from "../constants/index.js";
+import type { Produto } from "../schemas/produtos.schema.js";
 
 // Types
-type ItemDoPedido = Pick<PedidoItem, "quantidade" | "preco_unidade">;
-type ItemComDesconto = Pick<PedidoItem, "quantidade" | "preco_unidade" | "desconto_percentual">;
+type Cliente = {
+  vendedor_id: string;
+  tabela_preco_id: string | null;
+  limite_credito: string;
+  credito_utilizado: string;
+};
+type ItemDoPedido = { quantidade: number; preco_unidade: string };
+type ItemComDesconto = ItemDoPedido & { desconto_percentual: number };
 
 type DisponibilidadeProduto =
   | { disponivel: true; preco_unidade: string }
   | { disponivel: false; motivo: "produto_inativo" | "produto_sem_preco" };
-
-// Constants
-export const TABELA_PADRAO_FALLBACK = "TP01";
-export const MINIMO_EMBALAGENS = 2;
-export const PEDIDO_MINIMO = new Big("300");
 
 // Domain rules
 export function pertenceACarteira(cliente: Pick<Cliente, "vendedor_id">, vendedorId: string) {
@@ -22,7 +24,7 @@ export function pertenceACarteira(cliente: Pick<Cliente, "vendedor_id">, vendedo
 export function tabelaDoCliente(cliente: Pick<Cliente, "tabela_preco_id">) {
   return {
     tabela_preco_id: cliente.tabela_preco_id ?? TABELA_PADRAO_FALLBACK,
-    usa_tabela_padrao: cliente.tabela_preco_id === null,
+    tabela_preco_pendente: cliente.tabela_preco_id === null,
   };
 }
 
@@ -35,14 +37,24 @@ export function disponibilidadeDoProduto(
   return { disponivel: true, preco_unidade: precoUnidade };
 }
 
+export function embalagensMinimas(produto: Pick<Produto, "venda_somente_multiplo">) {
+  return produto.venda_somente_multiplo ? MINIMO_EMBALAGENS : 1;
+}
+
 export function validarQuantidade(
   produto: Pick<Produto, "fator_embalagem" | "venda_somente_multiplo">,
   quantidade: number,
 ) {
   if (!Number.isInteger(quantidade) || quantidade <= 0) return "quantidade_invalida";
   if (quantidade % produto.fator_embalagem !== 0) return "fora_do_multiplo";
-  if (produto.venda_somente_multiplo && quantidade < produto.fator_embalagem * MINIMO_EMBALAGENS)
+  if (quantidade < produto.fator_embalagem * embalagensMinimas(produto))
     return "abaixo_do_minimo_de_embalagens";
+  return null;
+}
+
+export function validarDesconto(percentual: number) {
+  if (!Number.isInteger(percentual) || percentual < 0 || percentual > 100)
+    return "desconto_invalido";
   return null;
 }
 
@@ -52,11 +64,15 @@ export function validarDescontos(itens: { desconto_percentual: number }[]) {
   return null;
 }
 
+export function acimaDaAlcada(percentual: number, alcadaPercentual: number) {
+  return percentual > alcadaPercentual;
+}
+
 export function definirStatusEnvio(
   itens: { desconto_percentual: number }[],
   alcadaPercentual: number,
 ) {
-  return itens.some((item) => item.desconto_percentual > alcadaPercentual)
+  return itens.some((item) => acimaDaAlcada(item.desconto_percentual, alcadaPercentual))
     ? "aguardando_aprovacao"
     : "enviado";
 }

@@ -34,15 +34,18 @@ services:
       retries: 15
 
   api:
-    build: ./api
+    build:
+      context: .
+      dockerfile: api/Dockerfile
     command: sh -c "pnpm db:migrate && pnpm db:setup && pnpm dev"
     environment:
       DATABASE_URL: postgres://order_manager:order_manager@db:5432/order_manager
     ports:
       - "3000:3000"
     volumes:
-      - ./api/src:/app/src
-      - ./api/drizzle:/app/drizzle
+      - ./api/src:/app/api/src
+      - ./api/drizzle:/app/api/drizzle
+      - ./contracts/src:/app/contracts/src
     depends_on:
       db:
         condition: service_healthy
