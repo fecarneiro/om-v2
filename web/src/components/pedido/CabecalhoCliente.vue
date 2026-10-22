@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type Big from "big.js";
 import type { ClienteCarteira } from "contracts/schemas";
-import CreditoCliente from "@/components/CreditoCliente.vue";
+import CreditoCliente from "@/components/pedido/CreditoCliente.vue";
 import { Badge } from "@/components/ui/badge";
 
 defineProps<{ cliente: ClienteCarteira; totalPedido: Big }>();

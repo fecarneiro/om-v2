@@ -3,8 +3,8 @@ import { PEDIDO_MINIMO } from "contracts/constants";
 import { type ClienteCarteira, clienteCarteiraSchema } from "contracts/schemas";
 import { onMounted, ref } from "vue";
 import { get } from "@/api/client";
-import AvisosCliente from "@/components/AvisosCliente.vue";
-import TopoApp from "@/components/TopoApp.vue";
+import CabecalhoApp from "@/components/app/CabecalhoApp.vue";
+import AvisosCliente from "@/components/carteira/AvisosCliente.vue";
 import { useSessaoStore } from "@/stores/sessao";
 import { formatarMoeda } from "@/utils/moeda";
 
@@ -31,7 +31,7 @@ onMounted(async () => {
 
 <template>
   <div class="mx-auto max-w-2xl pb-10">
-    <TopoApp />
+    <CabecalhoApp />
 
     <div class="px-5 pt-1 pb-4">
       <h1 class="text-[28px] leading-tight font-bold tracking-tight">Carteira</h1>

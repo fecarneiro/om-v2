@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import ItemPedidoLinha from "@/components/ItemPedidoLinha.vue";
+import ItemPedidoLinha from "@/components/pedido/ItemPedidoLinha.vue";
 import type { ItemPedido } from "@/stores/pedido";
 
 defineProps<{ itens: ItemPedido[]; alcada: number }>();

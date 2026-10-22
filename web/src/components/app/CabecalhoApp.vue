@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ChevronLeft } from "@lucide/vue";
 import { useRouter } from "vue-router";
-import LogoApp from "@/components/LogoApp.vue";
+import LogoApp from "@/components/app/LogoApp.vue";
 import { Button } from "@/components/ui/button";
 import { useSessaoStore } from "@/stores/sessao";
 

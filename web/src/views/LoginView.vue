@@ -3,7 +3,7 @@ import { type Vendedor, vendedorSchema } from "contracts/schemas";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { get } from "@/api/client";
-import LogoApp from "@/components/LogoApp.vue";
+import LogoApp from "@/components/app/LogoApp.vue";
 import { Button } from "@/components/ui/button";
 import {
   Select,

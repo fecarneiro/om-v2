@@ -11,17 +11,17 @@ import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import { get, post } from "@/api/client";
 import { ApiError } from "@/api/errors";
-import BuscaProdutos from "@/components/BuscaProdutos.vue";
-import CabecalhoCliente from "@/components/CabecalhoCliente.vue";
-import ItensPedido from "@/components/ItensPedido.vue";
-import ResultadoEnvio from "@/components/ResultadoEnvio.vue";
-import ResumoPedido from "@/components/ResumoPedido.vue";
-import TopoApp from "@/components/TopoApp.vue";
+import CabecalhoApp from "@/components/app/CabecalhoApp.vue";
+import BuscaProdutos from "@/components/pedido/BuscaProdutos.vue";
+import CabecalhoCliente from "@/components/pedido/CabecalhoCliente.vue";
+import ItensPedido from "@/components/pedido/ItensPedido.vue";
+import ResultadoEnvio from "@/components/pedido/ResultadoEnvio.vue";
+import ResumoPedido from "@/components/pedido/ResumoPedido.vue";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { emUnidades, itemValido, paraEnvio } from "@/pedido/item";
-import { mensagemDoErro } from "@/pedido/mensagens";
+import { itemEmUnidades, itemParaApi, itemValido } from "@/regras/item-pedido";
 import { usePedidoStore } from "@/stores/pedido";
 import { useSessaoStore } from "@/stores/sessao";
+import { mensagemDoErro } from "@/utils/mensagens-erro";
 
 const sessao = useSessaoStore();
 const pedido = usePedidoStore();
@@ -39,11 +39,11 @@ const pedidoAberto = ref(false);
 const desktop = useMediaQuery("(min-width: 1024px)");
 
 const itens = computed(() => pedido.itens(clienteId));
-const quantidade = computed(() =>
+const textoItens = computed(() =>
   itens.value.length === 1 ? "1 item" : `${itens.value.length} itens`,
 );
 const alcada = computed(() => sessao.vendedor?.alcada_desconto_percentual ?? 0);
-const total = computed(() => totalLiquidoDoPedido(itens.value.filter(itemValido).map(emUnidades)));
+const total = computed(() => totalLiquidoDoPedido(itens.value.filter(itemValido).map(itemEmUnidades)));
 
 async function carregarCliente() {
   if (!sessao.vendedor) return;
@@ -62,7 +62,7 @@ async function carregarCliente() {
 
 onMounted(carregarCliente);
 
-function mensagemDoEnvio(e: unknown) {
+function mensagemErroEnvio(e: unknown) {
   if (!(e instanceof ApiError)) return "Não foi possível enviar o pedido. Tente de novo.";
 
   const mensagem = mensagemDoErro(e.codigo);
@@ -81,7 +81,7 @@ async function enviar() {
       {
         vendedor_id: sessao.vendedor.id,
         cliente_id: clienteId,
-        itens: itens.value.map(paraEnvio),
+        itens: itens.value.map(itemParaApi),
       },
       pedidoEnviadoSchema,
     );
@@ -89,7 +89,7 @@ async function enviar() {
     pedidoAberto.value = false;
     await carregarCliente();
   } catch (e) {
-    erroEnvio.value = mensagemDoEnvio(e);
+    erroEnvio.value = mensagemErroEnvio(e);
   } finally {
     enviando.value = false;
   }
@@ -98,7 +98,7 @@ async function enviar() {
 
 <template>
   <div class="pb-44 lg:grid lg:h-dvh lg:grid-rows-[auto_1fr] lg:pb-0">
-    <TopoApp voltar="/clientes" />
+    <CabecalhoApp voltar="/clientes" />
 
     <p v-if="carregando" class="text-muted-foreground px-5 py-10 text-center">
       Carregando cliente...
@@ -126,7 +126,7 @@ async function enviar() {
 
       <!-- Desktop -->
       <aside v-if="desktop" class="bg-card flex min-h-0 flex-col border-l">
-        <h2 class="border-b px-6 pt-6 pb-3 font-semibold">Pedido · {{ quantidade }}</h2>
+        <h2 class="border-b px-6 pt-6 pb-3 font-semibold">Pedido · {{ textoItens }}</h2>
         <div class="flex-1 overflow-y-auto">
           <ItensPedido
             :itens="itens"
@@ -167,7 +167,7 @@ async function enviar() {
             :aria-describedby="undefined"
           >
             <SheetHeader class="border-b px-5 pt-5 pb-3">
-              <SheetTitle>Pedido · {{ quantidade }}</SheetTitle>
+              <SheetTitle>Pedido · {{ textoItens }}</SheetTitle>
             </SheetHeader>
             <div class="flex-1 overflow-y-auto">
               <ItensPedido

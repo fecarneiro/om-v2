@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type Big from "big.js";
 import type { ClienteCarteira, PedidoEnviado } from "contracts/schemas";
-import CabecalhoCliente from "@/components/CabecalhoCliente.vue";
+import CabecalhoCliente from "@/components/pedido/CabecalhoCliente.vue";
 import { Button } from "@/components/ui/button";
 import { formatarMoeda } from "@/utils/moeda";
 

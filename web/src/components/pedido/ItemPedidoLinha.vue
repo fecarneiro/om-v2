@@ -10,9 +10,9 @@ import {
 import { computed } from "vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { embalagensAoAumentar, emUnidades, validarEmbalagens } from "@/pedido/item";
+import { incrementarEmbalagens, itemEmUnidades, validarEmbalagens } from "@/regras/item-pedido";
 import type { ItemPedido } from "@/stores/pedido";
-import { exibicaoEmbalagens } from "@/utils/exibicao-produto";
+import { nomeDaEmbalagem } from "@/utils/exibicao-produto";
 import { formatarMoeda } from "@/utils/moeda";
 
 const props = defineProps<{ item: ItemPedido; alcada: number }>();
@@ -27,9 +27,9 @@ const minimo = computed(() => embalagensMinimas(produto.value));
 const erroQuantidade = computed(() => validarEmbalagens(props.item));
 const erroDesconto = computed(() => validarDesconto(props.item.desconto_percentual));
 const valido = computed(() => !erroQuantidade.value && !erroDesconto.value);
-const bruto = computed(() => totalBrutoDoItem(emUnidades(props.item)));
-const liquido = computed(() => totalLiquidoDoItem(emUnidades(props.item)));
-const acima = computed(() => acimaDaAlcada(props.item.desconto_percentual, props.alcada));
+const bruto = computed(() => totalBrutoDoItem(itemEmUnidades(props.item)));
+const liquido = computed(() => totalLiquidoDoItem(itemEmUnidades(props.item)));
+const descontoAcimaDaAlcada = computed(() => acimaDaAlcada(props.item.desconto_percentual, props.alcada));
 
 function valorDigitado(evento: Event) {
   return Number((evento.target as HTMLInputElement).value);
@@ -45,10 +45,10 @@ function alterarDesconto(valor: string | number) {
     <div>
       <p class="font-semibold">{{ produto.descricao }}</p>
       <p class="text-muted-foreground text-sm tabular-nums">
-        {{ item.embalagens }} {{ exibicaoEmbalagens(produto, item.embalagens) }}
+        {{ item.embalagens }} {{ nomeDaEmbalagem(produto, item.embalagens) }}
         <template v-if="produto.unidade_venda !== 'UN'">
           de {{ produto.fator_embalagem }}<template v-if="!erroQuantidade">
-            ({{ emUnidades(item).quantidade }} un)</template>
+            ({{ itemEmUnidades(item).quantidade }} un)</template>
         </template>
         a {{ formatarMoeda(produto.preco_unidade) }}/un
       </p>
@@ -91,7 +91,7 @@ function alterarDesconto(valor: string | number) {
             size="icon"
             class="text-foreground"
             :aria-label="`Aumentar quantidade de ${produto.descricao}`"
-            @click="emit('alterar', embalagensAoAumentar(item))"
+            @click="emit('alterar', incrementarEmbalagens(item))"
           >
             <Plus />
           </Button>
@@ -108,7 +108,7 @@ function alterarDesconto(valor: string | number) {
           step="1"
           :model-value="item.desconto_percentual"
           :aria-invalid="!!erroDesconto"
-          :class="['h-8 w-14 px-2 text-right text-sm tabular-nums', { 'border-warning': acima }]"
+          :class="['h-8 w-14 px-2 text-right text-sm tabular-nums', { 'border-warning': descontoAcimaDaAlcada }]"
           @update:model-value="alterarDesconto"
         />
         %
@@ -119,14 +119,14 @@ function alterarDesconto(valor: string | number) {
 
     <p v-if="erroQuantidade" class="text-destructive col-span-2 text-sm">
       <template v-if="erroQuantidade === 'abaixo_do_minimo_de_embalagens'">
-        Mínimo de {{ minimo }} {{ exibicaoEmbalagens(produto, minimo) }}.
+        Mínimo de {{ minimo }} {{ nomeDaEmbalagem(produto, minimo) }}.
       </template>
       <template v-else>Informe uma quantidade inteira.</template>
     </p>
     <p v-if="erroDesconto" class="text-destructive col-span-2 text-sm">
       Informe um desconto inteiro entre 0 e 100.
     </p>
-    <p v-else-if="acima" class="text-warning col-span-2 text-sm">
+    <p v-else-if="descontoAcimaDaAlcada" class="text-warning col-span-2 text-sm">
       Acima da sua alçada de {{ alcada }}%.
     </p>
   </div>

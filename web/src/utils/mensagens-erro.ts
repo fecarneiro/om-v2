@@ -1,4 +1,4 @@
-import type { BloqueioDoPedido } from "@/pedido/bloqueios";
+import type { BloqueioDoPedido } from "@/regras/bloqueios-pedido";
 
 type ErroDoEnvio =
   | "cliente_nao_encontrado"

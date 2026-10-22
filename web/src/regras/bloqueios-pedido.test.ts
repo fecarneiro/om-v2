@@ -1,7 +1,7 @@
 import type { ClienteCarteira, ProdutoDisponivel } from "contracts/schemas";
 import { describe, expect, it } from "vitest";
 import type { ItemPedido } from "@/stores/pedido";
-import { bloqueiosDoPedido } from "./bloqueios";
+import { bloqueiosDoPedido } from "./bloqueios-pedido";
 
 function item(produto: Partial<ProdutoDisponivel>, embalagens: number, desconto = 0): ItemPedido {
   return {

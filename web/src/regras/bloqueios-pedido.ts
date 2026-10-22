@@ -1,6 +1,6 @@
 import { validarCredito, validarDescontos, validarPedidoMinimo } from "contracts/rules";
 import type { ClienteCarteira } from "contracts/schemas";
-import { emUnidades, itemValido } from "@/pedido/item";
+import { itemEmUnidades, itemValido } from "@/regras/item-pedido";
 import type { ItemPedido } from "@/stores/pedido";
 
 export type BloqueioDoPedido =
@@ -10,7 +10,7 @@ export type BloqueioDoPedido =
   | "credito_insuficiente";
 
 export function bloqueiosDoPedido(itens: ItemPedido[], cliente: ClienteCarteira) {
-  const validos = itens.filter(itemValido).map(emUnidades);
+  const validos = itens.filter(itemValido).map(itemEmUnidades);
   const bloqueios: BloqueioDoPedido[] = [];
 
   if (validos.length < itens.length) bloqueios.push("item_invalido");

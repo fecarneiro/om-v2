@@ -20,10 +20,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { bloqueiosDoPedido } from "@/pedido/bloqueios";
-import { emUnidades, itemValido } from "@/pedido/item";
-import { MENSAGENS } from "@/pedido/mensagens";
+import { bloqueiosDoPedido } from "@/regras/bloqueios-pedido";
+import { itemEmUnidades, itemValido } from "@/regras/item-pedido";
 import type { ItemPedido } from "@/stores/pedido";
+import { MENSAGENS } from "@/utils/mensagens-erro";
 import { formatarMoeda } from "@/utils/moeda";
 
 const props = defineProps<{
@@ -39,7 +39,7 @@ const emit = defineEmits<{ enviar: []; abrir: [] }>();
 const confirmando = ref(false);
 
 const vazio = computed(() => props.itens.length === 0);
-const itensEmUnidades = computed(() => props.itens.filter(itemValido).map(emUnidades));
+const itensEmUnidades = computed(() => props.itens.filter(itemValido).map(itemEmUnidades));
 const bruto = computed(() => totalBrutoDoPedido(itensEmUnidades.value));
 const liquido = computed(() => totalLiquidoDoPedido(itensEmUnidades.value));
 const desconto = computed(() => bruto.value.minus(liquido.value));
@@ -60,7 +60,7 @@ const rotulo = computed(() => {
   return paraAprovacao.value ? "Enviar para aprovação" : "Enviar pedido";
 });
 
-const quantidade = computed(() =>
+const textoItens = computed(() =>
   props.itens.length === 1 ? "1 item" : `${props.itens.length} itens`,
 );
 
@@ -112,7 +112,7 @@ const podeEnviar = computed(() => !vazio.value && bloqueios.value.length === 0 &
           class="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-[13px]"
           @click="emit('abrir')"
         >
-          Pedido · {{ quantidade }}
+          Pedido · {{ textoItens }}
           <ChevronUp class="size-4" />
         </button>
         <p class="text-2xl font-bold tracking-tight" :class="{ 'text-muted-foreground': vazio }">
@@ -153,7 +153,7 @@ const podeEnviar = computed(() => !vazio.value && bloqueios.value.length === 0 &
             {{ paraAprovacao ? "Enviar pedido para aprovação?" : "Enviar pedido?" }}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            {{ quantidade }}, total de {{ formatarMoeda(liquido.toFixed(2)) }}.
+            {{ textoItens }}, total de {{ formatarMoeda(liquido.toFixed(2)) }}.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -1,7 +1,12 @@
 import type { ProdutoDisponivel } from "contracts/schemas";
 import { describe, expect, it } from "vitest";
 import type { ItemPedido } from "@/stores/pedido";
-import { embalagensAoAumentar, emUnidades, itemValido, validarEmbalagens } from "./item";
+import {
+  incrementarEmbalagens,
+  itemEmUnidades,
+  itemValido,
+  validarEmbalagens,
+} from "./item-pedido";
 
 function item(produto: Partial<ProdutoDisponivel>, embalagens: number, desconto = 0): ItemPedido {
   return {
@@ -27,9 +32,9 @@ function item(produto: Partial<ProdutoDisponivel>, embalagens: number, desconto 
 
 const acucar = { unidade_venda: "FD", fator_embalagem: 10, venda_somente_multiplo: true } as const;
 
-describe("emUnidades", () => {
+describe("itemEmUnidades", () => {
   it("converte embalagens em unidades pelo fator", () => {
-    expect(emUnidades(item(acucar, 4, 10))).toEqual({
+    expect(itemEmUnidades(item(acucar, 4, 10))).toEqual({
       quantidade: 40,
       preco_unidade: "1.00",
       desconto_percentual: 10,
@@ -60,13 +65,13 @@ describe("itemValido", () => {
   });
 });
 
-describe("embalagensAoAumentar", () => {
+describe("incrementarEmbalagens", () => {
   it("soma uma embalagem quando a quantidade é válida", () => {
-    expect(embalagensAoAumentar(item(acucar, 2))).toBe(3);
+    expect(incrementarEmbalagens(item(acucar, 2))).toBe(3);
   });
 
   it("vai para o mínimo quando a quantidade é inválida", () => {
-    expect(embalagensAoAumentar(item(acucar, 1))).toBe(2);
-    expect(embalagensAoAumentar(item(acucar, Number.NaN))).toBe(2);
+    expect(incrementarEmbalagens(item(acucar, 1))).toBe(2);
+    expect(incrementarEmbalagens(item(acucar, Number.NaN))).toBe(2);
   });
 });

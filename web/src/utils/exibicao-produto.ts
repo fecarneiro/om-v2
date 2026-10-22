@@ -9,12 +9,12 @@ const UNIDADE_VENDA: Record<Produto["unidade_venda"], { singular: string; plural
   FD: { singular: "Fardo", plural: "Fardos" },
 };
 
-export function exibicaoEmbalagens(produto: Produto, embalagens: number) {
+export function nomeDaEmbalagem(produto: Produto, embalagens: number) {
   const nome = UNIDADE_VENDA[produto.unidade_venda];
   return (embalagens === 1 ? nome.singular : nome.plural).toLowerCase();
 }
 
-export function exibicaoEmbalagem(produto: Produto) {
+export function descricaoDaEmbalagem(produto: Produto) {
   const nome = UNIDADE_VENDA[produto.unidade_venda].singular;
   const minimo = embalagensMinimas(produto);
   const embalagem = produto.unidade_venda === "UN" ? nome : `${nome} c/ ${produto.fator_embalagem}`;

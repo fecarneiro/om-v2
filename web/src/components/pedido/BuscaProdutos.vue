@@ -7,9 +7,9 @@ import { get } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { embalagensAoAumentar, validarEmbalagens } from "@/pedido/item";
+import { incrementarEmbalagens, validarEmbalagens } from "@/regras/item-pedido";
 import type { ItemPedido } from "@/stores/pedido";
-import { exibicaoEmbalagem, precoDaEmbalagem } from "@/utils/exibicao-produto";
+import { descricaoDaEmbalagem, precoDaEmbalagem } from "@/utils/exibicao-produto";
 import { formatarMoeda } from "@/utils/moeda";
 
 const props = defineProps<{ clienteId: string; itens: ItemPedido[] }>();
@@ -121,7 +121,7 @@ onUnmounted(() => {
       </span>
 
       <template v-if="produto.disponivel">
-        <Badge variant="embalagem" class="col-start-1 mt-1">{{ exibicaoEmbalagem(produto) }}</Badge>
+        <Badge variant="embalagem" class="col-start-1 mt-1">{{ descricaoDaEmbalagem(produto) }}</Badge>
         <div
           v-if="item"
           class="bg-input col-start-2 mt-1 inline-flex items-center justify-self-end rounded-full"
@@ -142,7 +142,7 @@ onUnmounted(() => {
             size="icon"
             class="text-foreground size-8"
             :aria-label="`Aumentar quantidade de ${produto.descricao}`"
-            @click="emit('alterar', item, embalagensAoAumentar(item))"
+            @click="emit('alterar', item, incrementarEmbalagens(item))"
           >
             <Plus />
           </Button>
