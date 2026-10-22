@@ -11,8 +11,10 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <p v-if="itens.length === 0">Nenhum item no pedido.</p>
-  <ul v-else>
+  <p v-if="itens.length === 0" class="text-muted-foreground px-5 py-10 text-center text-sm">
+    Nenhum item no pedido. Busque produtos para adicionar.
+  </p>
+  <ul v-else class="divide-y border-b">
     <li v-for="item in itens" :key="item.produto.id">
       <ItemPedidoLinha
         :item="item"

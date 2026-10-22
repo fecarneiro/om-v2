@@ -16,17 +16,17 @@ export function exibicaoEmbalagens(produto: Produto, embalagens: number) {
 
 export function exibicaoUnidade(produto: Produto) {
   const nome = UNIDADE_VENDA[produto.unidade_venda].singular;
-  const descricao = produto.unidade_venda === "UN" ? nome : `${nome} c/ ${produto.fator_embalagem}`;
-
-  const minimo = embalagensMinimas(produto);
-  if (minimo === 1) return descricao;
-  return `${descricao} · mín. ${minimo} ${exibicaoEmbalagens(produto, minimo)}`;
+  return produto.unidade_venda === "UN" ? nome : `${nome} c/ ${produto.fator_embalagem}`;
 }
 
-export function exibicaoPreco(produto: Produto, precoUnidade: string) {
-  const unitario = `${formatarMoeda(precoUnidade)}/un`;
-  if (produto.unidade_venda === "UN") return unitario;
+export function exibicaoMinimo(produto: Produto) {
+  const minimo = embalagensMinimas(produto);
+  if (minimo === 1) return null;
+  return `Mín. ${minimo} ${exibicaoEmbalagens(produto, minimo)}`;
+}
 
+export function precoPorEmbalagem(produto: Produto, precoUnidade: string) {
+  if (produto.unidade_venda === "UN") return null;
   const embalagem = formatarMoeda(new Big(precoUnidade).times(produto.fator_embalagem).toFixed(2));
-  return `${unitario} · ${embalagem} por ${exibicaoEmbalagens(produto, 1)}`;
+  return `${embalagem} por ${exibicaoEmbalagens(produto, 1)}`;
 }

@@ -1,0 +1,749 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Mock UI | Pedidos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --fundo: #12191e;
+    --superficie: #1e252b;
+    --superficie-2: #2b333a;
+    --borda: #2f383f;
+    --texto: #e9eef2;
+    --texto-suave: #8c98a2;
+    --acao: #3d9df0;
+    --acao-texto: #06121c;
+    --chip: #cfe4f8;
+    --chip-texto: #12324f;
+    --aviso: #e0a43a;
+    --erro: #e5584a;
+    --raio: 10px;
+  }
+
+  * { box-sizing: border-box; margin: 0; }
+
+  body {
+    background: #0b1014;
+    color: var(--texto);
+    font-family: "Hanken Grotesk", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.4;
+    padding: 40px 24px 80px;
+  }
+
+  .vitrine {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  figure { display: grid; gap: 12px; }
+  figcaption { color: var(--texto-suave); font-size: 14px; padding-left: 4px; }
+
+  .tela {
+    width: 375px;
+    height: 760px;
+    background: var(--fundo);
+    border: 1px solid var(--borda);
+    border-radius: 28px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  .rolagem { flex: 1; overflow-y: auto; }
+
+  .num { font-variant-numeric: tabular-nums; }
+  .suave { color: var(--texto-suave); }
+  .pequeno { font-size: 14px; }
+
+  .topo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 12px;
+  }
+
+  .voltar {
+    color: var(--texto-suave);
+    text-decoration: none;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+  h2 { font-size: 16px; font-weight: 600; }
+
+  .btn {
+    font: inherit;
+    font-weight: 600;
+    border: 0;
+    border-radius: 999px;
+    padding: 12px 20px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn:focus-visible, .campo:focus-visible { outline: 2px solid var(--acao); outline-offset: 2px; }
+  .btn-primario { background: var(--acao); color: var(--acao-texto); }
+  .btn-primario:disabled { background: var(--superficie-2); color: var(--texto-suave); cursor: not-allowed; }
+  .btn-secundario { background: transparent; color: var(--acao); border: 1px solid var(--acao); padding: 8px 14px; font-size: 14px; }
+  .btn-secundario:disabled { color: var(--texto-suave); border-color: var(--borda); cursor: default; }
+  .btn-fantasma { background: transparent; color: var(--texto-suave); padding: 6px 10px; font-size: 14px; }
+  .btn-bloco { width: 100%; }
+
+  .campo {
+    width: 100%;
+    font: inherit;
+    color: var(--texto);
+    background: var(--superficie-2);
+    border: 1px solid transparent;
+    border-radius: var(--raio);
+    padding: 12px 14px;
+  }
+  .campo::placeholder { color: var(--texto-suave); }
+
+  .chip {
+    display: inline-block;
+    background: var(--chip);
+    color: var(--chip-texto);
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 2px 7px;
+  }
+  .chip-neutro { background: var(--superficie-2); color: var(--texto-suave); }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .tag-aviso { color: var(--aviso); }
+  .tag-erro { color: var(--erro); }
+
+  .lista { list-style: none; padding: 0; }
+  .lista > li { border-top: 1px solid var(--borda); }
+  .lista > li:last-child { border-bottom: 1px solid var(--borda); }
+
+  .login {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 32px 24px 40px;
+    gap: 32px;
+  }
+  .marca { font-weight: 700; font-size: 20px; letter-spacing: -0.01em; }
+  .marca span { color: var(--acao); }
+  .login h1 { font-size: 34px; }
+  .form { display: grid; gap: 12px; }
+  .rotulo { font-size: 14px; color: var(--texto-suave); }
+  select.campo { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--texto-suave) 50%), linear-gradient(135deg, var(--texto-suave) 50%, transparent 50%); background-position: calc(100% - 20px) 50%, calc(100% - 15px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+
+  .cliente {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 4px 12px;
+    padding: 16px 20px;
+    color: inherit;
+    text-decoration: none;
+  }
+  .cliente:hover { background: var(--superficie); }
+  .cliente .nome { font-weight: 600; font-size: 17px; }
+  .cliente .credito { text-align: right; }
+  .cliente .credito strong { display: block; font-weight: 600; }
+  .cliente .tags { grid-column: 1 / -1; display: flex; gap: 14px; margin-top: 4px; }
+
+  .cabecalho-cliente { padding: 4px 20px 20px; display: grid; gap: 14px; }
+  .linha-meta { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+
+  .credito-barra { display: grid; gap: 8px; }
+  .trilho {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--superficie-2);
+    display: flex;
+    overflow: hidden;
+  }
+  .trilho .usado { background: var(--texto-suave); }
+  .trilho .pedido { background: var(--acao); }
+  .trilho .estouro { background: var(--erro); }
+  .legenda { display: flex; gap: 16px; font-size: 13px; color: var(--texto-suave); }
+  .legenda i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+
+  .abas { display: flex; gap: 4px; padding: 0 20px; border-bottom: 1px solid var(--borda); }
+  .aba {
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    background: none;
+    border: 0;
+    color: var(--texto-suave);
+    padding: 12px 10px;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+  }
+  .aba[aria-selected="true"] { color: var(--texto); border-bottom-color: var(--acao); }
+  .aba .contador { display: inline-block; min-width: 20px; margin-left: 4px; padding: 0 6px; border-radius: 999px; background: var(--acao); color: var(--acao-texto); font-size: 12px; }
+
+  .busca { position: sticky; top: 0; background: var(--fundo); padding: 14px 20px; z-index: 1; }
+
+  .produto { display: grid; grid-template-columns: 1fr auto; gap: 6px 12px; padding: 14px 20px; align-items: end; }
+  .produto .desc { font-weight: 600; grid-column: 1 / -1; }
+  .produto .chips { display: flex; gap: 6px; flex-wrap: wrap; grid-column: 1 / -1; }
+  .produto .preco { font-weight: 600; font-size: 17px; }
+  .produto .preco small { font-weight: 400; color: var(--texto-suave); font-size: 13px; }
+  .produto.indisponivel .desc { color: var(--texto-suave); }
+
+  .item { display: grid; grid-template-columns: 1fr auto; gap: 10px 12px; padding: 14px 20px; }
+  .item .desc { font-weight: 600; }
+  .item .total { text-align: right; font-weight: 600; }
+  .item .controles { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+
+  .stepper { display: inline-flex; align-items: center; background: var(--superficie-2); border-radius: 999px; }
+  .stepper button {
+    font: inherit;
+    font-size: 18px;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    background: none;
+    color: var(--texto);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  .stepper button:disabled { color: var(--borda); }
+  .stepper input {
+    width: 40px;
+    text-align: center;
+    font: inherit;
+    font-weight: 600;
+    color: var(--texto);
+    background: none;
+    border: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .desconto { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--texto-suave); }
+  .desconto input { width: 56px; padding: 6px 8px; text-align: right; font-size: 14px; }
+  .desconto input.excedido { border-color: var(--aviso); }
+
+  .barra {
+    background: var(--superficie);
+    border-top: 1px solid var(--borda);
+    padding: 14px 20px 20px;
+    display: grid;
+    gap: 12px;
+  }
+  .barra.aviso { box-shadow: inset 0 3px 0 var(--aviso); }
+  .barra.erro { box-shadow: inset 0 3px 0 var(--erro); }
+  .barra .motivo { font-size: 14px; display: flex; gap: 8px; align-items: flex-start; }
+  .barra.aviso .motivo { color: var(--aviso); }
+  .barra.erro .motivo { color: var(--erro); }
+  .barra .linha { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .barra .valor, .barra .detalhe, .barra .btn { white-space: nowrap; }
+  .barra .btn { padding: 12px 18px; flex: 1 0 auto; }
+  .barra .linha { flex-wrap: wrap; }
+  .cabecalho-lista { display: flex; justify-content: space-between; padding: 0 20px 8px; font-size: 13px; color: var(--texto-suave); }
+  .barra .valor { font-size: 24px; font-weight: 700; letter-spacing: -0.01em; }
+  .barra .detalhe { font-size: 13px; color: var(--texto-suave); }
+
+  .estados { display: grid; gap: 16px; width: 375px; }
+  .estados .barra { border: 1px solid var(--borda); border-radius: 16px; }
+
+
+  .desktop {
+    width: 1280px;
+    height: 800px;
+    background: var(--fundo);
+    border: 1px solid var(--borda);
+    border-radius: 14px;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto 1fr;
+  }
+  .desktop .barra-app {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 32px;
+    border-bottom: 1px solid var(--borda);
+  }
+  .desktop .barra-app nav { display: flex; align-items: center; gap: 20px; }
+  .desktop .corpo { display: grid; grid-template-columns: 1fr 420px; min-height: 0; }
+  .desktop .catalogo { overflow-y: auto; padding: 24px 32px; display: grid; align-content: start; gap: 20px; }
+  .desktop .catalogo .cabecalho-cliente { padding: 0; grid-template-columns: 1fr 380px; align-items: end; gap: 32px; }
+  .desktop .catalogo .busca { padding: 0; }
+  .desktop .catalogo .produto { grid-template-columns: 1fr 140px 120px; padding: 14px 4px; align-items: center; }
+  .desktop .catalogo .produto .desc,
+  .desktop .catalogo .produto .chips { grid-column: 1; }
+  .desktop .catalogo .produto .preco { grid-column: 2; grid-row: 1 / span 2; text-align: right; }
+  .desktop .catalogo .produto .btn { grid-column: 3; grid-row: 1 / span 2; justify-self: end; }
+  .desktop .catalogo .produto .motivo-indisponivel { grid-column: 2 / span 2; grid-row: 1 / span 2; text-align: right; }
+  .desktop .pedido { background: var(--superficie); border-left: 1px solid var(--borda); display: flex; flex-direction: column; min-height: 0; }
+  .desktop .pedido > header { padding: 24px 24px 12px; display: flex; justify-content: space-between; align-items: baseline; }
+  .desktop .pedido .rolagem .item { padding: 14px 24px; }
+  .desktop .pedido .lista > li { border-color: var(--borda); }
+  .desktop .pedido .barra { background: var(--fundo); padding: 16px 24px 24px; }
+
+  .vazio { padding: 40px 20px; text-align: center; color: var(--texto-suave); display: grid; gap: 4px; }
+</style>
+</head>
+<body>
+<main class="vitrine">
+
+  <figure>
+    <div class="tela">
+      <div class="login">
+        <p class="marca">Smart<span>Pedido</span></p>
+        <div>
+          <h1>Quem está vendendo hoje?</h1>
+        </div>
+        <form class="form" onsubmit="return false">
+          <label class="rotulo" for="vendedor">Vendedor</label>
+          <select id="vendedor" class="campo">
+            <option>Selecione seu nome</option>
+            <option>Ana Souza</option>
+            <option>Bruno Lima</option>
+          </select>
+          <button class="btn btn-primario btn-bloco" type="submit">Entrar</button>
+        </form>
+      </div>
+    </div>
+    <figcaption>Login</figcaption>
+  </figure>
+
+  <figure>
+    <div class="tela">
+      <div class="topo">
+        <span class="suave pequeno">Olá, Ana</span>
+        <button class="btn btn-fantasma" type="button">Sair</button>
+      </div>
+      <div style="padding: 4px 20px 16px">
+        <h1>Carteira</h1>
+        <p class="suave pequeno" style="margin-top: 4px">12 clientes</p>
+      </div>
+      <div class="cabecalho-lista"><span>Cliente</span><span>Crédito disponível</span></div>
+      <div class="rolagem">
+        <ul class="lista">
+          <li>
+            <a class="cliente" href="#">
+              <span class="nome">Mercado Bom Preço</span>
+              <span class="credito pequeno"><strong class="num">R$ 4.200,00</strong></span>
+              <span class="suave pequeno">Campinas/SP</span>
+              <span></span>
+            </a>
+          </li>
+          <li>
+            <a class="cliente" href="#">
+              <span class="nome">Padaria Central</span>
+              <span class="credito pequeno"><strong class="num">R$ 0,00</strong></span>
+              <span class="suave pequeno">Sorocaba/SP</span>
+              <span class="tags"><span class="tag tag-erro">Sem crédito</span></span>
+            </a>
+          </li>
+          <li>
+            <a class="cliente" href="#">
+              <span class="nome">Empório Lima</span>
+              <span class="credito pequeno"><strong class="num">R$ 1.850,00</strong></span>
+              <span class="suave pequeno">Jundiaí/SP</span>
+              <span class="tags"><span class="tag tag-aviso">Tabela provisória</span></span>
+            </a>
+          </li>
+          <li>
+            <a class="cliente" href="#">
+              <span class="nome">Atacadão do Zé</span>
+              <span class="credito pequeno"><strong class="num">R$ 12.300,00</strong></span>
+              <span class="suave pequeno">Campinas/SP</span>
+              <span></span>
+            </a>
+          </li>
+          <li>
+            <a class="cliente" href="#">
+              <span class="nome">Mini Mercado Sol</span>
+              <span class="credito pequeno"><strong class="num">R$ 640,00</strong></span>
+              <span class="suave pequeno">Valinhos/SP</span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+    <figcaption>Carteira</figcaption>
+  </figure>
+
+  <figure>
+    <div class="tela">
+      <div class="topo"><a class="voltar" href="#">‹ Carteira</a></div>
+      <div class="rolagem">
+        <div class="cabecalho-cliente">
+          <div>
+            <h1>Mercado Bom Preço</h1>
+            <p class="suave pequeno" style="margin-top: 4px">Campinas/SP, tabela Varejo</p>
+          </div>
+          <div class="credito-barra">
+            <div class="linha-meta">
+              <span class="pequeno">Crédito</span>
+              <span class="pequeno num"><strong>R$ 2.915,50</strong> <span class="suave">livre de R$ 10.000,00</span></span>
+            </div>
+            <div class="trilho" role="img" aria-label="58% usado, 13% neste pedido, 29% livre">
+              <span class="usado" style="width: 58%"></span>
+              <span class="pedido" style="width: 12.8%"></span>
+            </div>
+            <div class="legenda">
+              <span><i style="background: var(--texto-suave)"></i>Em aberto</span>
+              <span><i style="background: var(--acao)"></i>Este pedido</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="abas" role="tablist">
+          <button class="aba" role="tab" aria-selected="true">Produtos</button>
+          <button class="aba" role="tab" aria-selected="false">No pedido <span class="contador">3</span></button>
+        </div>
+
+        <div class="busca">
+          <input class="campo" type="search" value="café" placeholder="Nome ou código de barras" />
+        </div>
+
+        <ul class="lista">
+          <li class="produto">
+            <span class="desc">Café Pilão Tradicional 500g</span>
+            <span class="chips"><span class="chip">CX c/ 10</span><span class="chip chip-neutro">7896089012453</span></span>
+            <span class="preco num">R$ 18,90 <small>/un</small></span>
+            <button class="btn btn-secundario" type="button">Adicionar</button>
+          </li>
+          <li class="produto">
+            <span class="desc">Café Melitta Extra Forte 250g</span>
+            <span class="chips"><span class="chip">UN</span><span class="chip chip-neutro">7891021006125</span></span>
+            <span class="preco num">R$ 9,40 <small>/un</small></span>
+            <button class="btn btn-secundario" type="button" disabled>No pedido</button>
+          </li>
+          <li class="produto indisponivel">
+            <span class="desc">Café 3 Corações Gourmet 1kg</span>
+            <span class="chips"><span class="chip chip-neutro">7896005800157</span></span>
+            <span class="suave pequeno" style="grid-column: 1 / -1">Sem preço na tabela Varejo</span>
+          </li>
+          <li class="produto">
+            <span class="desc">Café Pilão Descafeinado 500g</span>
+            <span class="chips"><span class="chip">FD c/ 6</span><span class="chip chip-neutro">7896089028331</span></span>
+            <span class="preco num">R$ 22,30 <small>/un</small></span>
+            <button class="btn btn-secundario" type="button">Adicionar</button>
+          </li>
+        </ul>
+      </div>
+      <div class="barra">
+        <div class="linha">
+          <div>
+            <div class="valor num">R$ 1.284,50</div>
+            <div class="detalhe">3 itens</div>
+          </div>
+          <button class="btn btn-primario" type="button">Enviar pedido</button>
+        </div>
+      </div>
+    </div>
+    <figcaption>Pedido, aba Produtos</figcaption>
+  </figure>
+
+  <figure>
+    <div class="tela">
+      <div class="topo"><a class="voltar" href="#">‹ Carteira</a></div>
+      <div class="rolagem">
+        <div class="cabecalho-cliente">
+          <div>
+            <h1>Mercado Bom Preço</h1>
+            <p class="suave pequeno" style="margin-top: 4px">Campinas/SP, tabela Varejo</p>
+          </div>
+        </div>
+
+        <div class="abas" role="tablist">
+          <button class="aba" role="tab" aria-selected="false">Produtos</button>
+          <button class="aba" role="tab" aria-selected="true">No pedido <span class="contador">3</span></button>
+        </div>
+
+        <ul class="lista">
+          <li class="item">
+            <div>
+              <div class="desc">Café Pilão Tradicional 500g</div>
+              <div class="suave pequeno num">2 caixas, 20 un a R$ 18,90</div>
+            </div>
+            <div class="total num">R$ 378,00</div>
+            <div class="controles">
+              <div class="stepper">
+                <button type="button" aria-label="Diminuir">−</button>
+                <input value="2" inputmode="numeric" aria-label="Quantidade" />
+                <button type="button" aria-label="Aumentar">+</button>
+              </div>
+              <label class="desconto">Desc. <input class="campo num" value="0" inputmode="decimal" /> %</label>
+              <button class="btn btn-fantasma" type="button">Remover</button>
+            </div>
+          </li>
+          <li class="item">
+            <div>
+              <div class="desc">Café Melitta Extra Forte 250g</div>
+              <div class="suave pequeno num">30 un a R$ 9,40</div>
+            </div>
+            <div class="total num">
+              R$ 253,80
+              <div class="suave pequeno" style="font-weight:400"><s>R$ 282,00</s></div>
+            </div>
+            <div class="controles">
+              <div class="stepper">
+                <button type="button" aria-label="Diminuir">−</button>
+                <input value="30" inputmode="numeric" aria-label="Quantidade" />
+                <button type="button" aria-label="Aumentar">+</button>
+              </div>
+              <label class="desconto">Desc. <input class="campo num excedido" value="10" inputmode="decimal" /> %</label>
+              <button class="btn btn-fantasma" type="button">Remover</button>
+            </div>
+          </li>
+          <li class="item">
+            <div>
+              <div class="desc">Açúcar União Refinado 1kg</div>
+              <div class="suave pequeno num">4 fardos, 40 un a R$ 16,32</div>
+            </div>
+            <div class="total num">R$ 652,70</div>
+            <div class="controles">
+              <div class="stepper">
+                <button type="button" aria-label="Diminuir">−</button>
+                <input value="4" inputmode="numeric" aria-label="Quantidade" />
+                <button type="button" aria-label="Aumentar">+</button>
+              </div>
+              <label class="desconto">Desc. <input class="campo num" value="0" inputmode="decimal" /> %</label>
+              <button class="btn btn-fantasma" type="button">Remover</button>
+            </div>
+          </li>
+        </ul>
+      </div>
+      <div class="barra aviso">
+        <p class="motivo">Desconto acima da sua alçada de 5%. O pedido vai para aprovação do supervisor.</p>
+        <div class="linha">
+          <div>
+            <div class="valor num">R$ 1.284,50</div>
+            <div class="detalhe num">Desconto de R$ 28,20</div>
+          </div>
+          <button class="btn btn-primario" type="button">Enviar para aprovação</button>
+        </div>
+      </div>
+    </div>
+    <figcaption>Pedido, aba No pedido</figcaption>
+  </figure>
+
+  <figure>
+    <div class="estados">
+      <div class="barra">
+        <div class="linha">
+          <div>
+            <div class="valor num">R$ 1.284,50</div>
+            <div class="detalhe">3 itens</div>
+          </div>
+          <button class="btn btn-primario" type="button">Enviar pedido</button>
+        </div>
+      </div>
+      <div class="barra aviso">
+        <p class="motivo">Desconto acima da sua alçada de 5%. O pedido vai para aprovação do supervisor.</p>
+        <div class="linha">
+          <div>
+            <div class="valor num">R$ 1.284,50</div>
+            <div class="detalhe num">Desconto de R$ 28,20</div>
+          </div>
+          <button class="btn btn-primario" type="button">Enviar para aprovação</button>
+        </div>
+      </div>
+      <div class="barra erro">
+        <p class="motivo">O pedido excede o crédito disponível em R$ 1.810,00. Ajuste os itens para enviar.</p>
+        <div class="linha">
+          <div>
+            <div class="valor num">R$ 6.010,00</div>
+            <div class="detalhe">8 itens</div>
+          </div>
+          <button class="btn btn-primario" type="button" disabled>Enviar pedido</button>
+        </div>
+      </div>
+      <div class="barra">
+        <div class="linha">
+          <div>
+            <div class="valor num suave">R$ 0,00</div>
+            <div class="detalhe">Nenhum item adicionado</div>
+          </div>
+          <button class="btn btn-primario" type="button" disabled>Enviar pedido</button>
+        </div>
+      </div>
+
+      <div class="credito-barra" style="padding: 8px 4px 0">
+        <div class="linha-meta">
+          <span class="pequeno">Crédito excedido</span>
+          <span class="pequeno num tag-erro"><strong>−R$ 1.810,00</strong></span>
+        </div>
+        <div class="trilho">
+          <span class="usado" style="width: 58%"></span>
+          <span class="pedido" style="width: 24%"></span>
+          <span class="estouro" style="width: 18%"></span>
+        </div>
+      </div>
+    </div>
+    <figcaption>Estados da barra do pedido e crédito excedido</figcaption>
+  </figure>
+
+  <figure>
+    <div class="desktop">
+      <div class="barra-app">
+        <p class="marca">Smart<span>Pedido</span></p>
+        <nav>
+          <a class="voltar" href="#">‹ Carteira</a>
+          <span class="suave pequeno">Ana Souza</span>
+          <button class="btn btn-fantasma" type="button">Sair</button>
+        </nav>
+      </div>
+      <div class="corpo">
+        <section class="catalogo">
+          <div class="cabecalho-cliente">
+            <div>
+              <h1>Mercado Bom Preço</h1>
+              <p class="suave pequeno" style="margin-top: 4px">Campinas/SP, tabela Varejo</p>
+            </div>
+            <div class="credito-barra">
+              <div class="linha-meta">
+                <span class="pequeno">Crédito</span>
+                <span class="pequeno num"><strong>R$ 2.915,50</strong> <span class="suave">livre de R$ 10.000,00</span></span>
+              </div>
+              <div class="trilho" role="img" aria-label="58% usado, 13% neste pedido, 29% livre">
+                <span class="usado" style="width: 58%"></span>
+                <span class="pedido" style="width: 12.8%"></span>
+              </div>
+              <div class="legenda">
+                <span><i style="background: var(--texto-suave)"></i>Em aberto</span>
+                <span><i style="background: var(--acao)"></i>Este pedido</span>
+              </div>
+            </div>
+          </div>
+          <div class="busca">
+            <input class="campo" type="search" value="café" placeholder="Nome ou código de barras" />
+          </div>
+          <ul class="lista">
+              <li class="produto">
+                <span class="desc">Café Pilão Tradicional 500g</span>
+                <span class="chips"><span class="chip">CX c/ 10</span><span class="chip chip-neutro">7896089012453</span></span>
+                <span class="preco num">R$ 18,90 <small>/un</small></span>
+                <button class="btn btn-secundario" type="button" disabled>No pedido</button>
+              </li>
+              <li class="produto">
+                <span class="desc">Café Melitta Extra Forte 250g</span>
+                <span class="chips"><span class="chip">UN</span><span class="chip chip-neutro">7891021006125</span></span>
+                <span class="preco num">R$ 9,40 <small>/un</small></span>
+                <button class="btn btn-secundario" type="button" disabled>No pedido</button>
+              </li>
+              <li class="produto indisponivel">
+                <span class="desc">Café 3 Corações Gourmet 1kg</span>
+                <span class="chips"><span class="chip chip-neutro">7896005800157</span></span>
+                <span class="suave pequeno motivo-indisponivel">Sem preço na tabela Varejo</span>
+              </li>
+              <li class="produto">
+                <span class="desc">Café Pilão Descafeinado 500g</span>
+                <span class="chips"><span class="chip">FD c/ 6</span><span class="chip chip-neutro">7896089028331</span></span>
+                <span class="preco num">R$ 22,30 <small>/un</small></span>
+                <button class="btn btn-secundario" type="button">Adicionar</button>
+              </li>
+              <li class="produto">
+                <span class="desc">Café Melitta Tradicional 500g</span>
+                <span class="chips"><span class="chip">CX c/ 10</span><span class="chip chip-neutro">7891021001502</span></span>
+                <span class="preco num">R$ 17,60 <small>/un</small></span>
+                <button class="btn btn-secundario" type="button">Adicionar</button>
+              </li>
+              <li class="produto">
+                <span class="desc">Café Santa Clara Extra Forte 250g</span>
+                <span class="chips"><span class="chip">UN</span><span class="chip chip-neutro">7896224800013</span></span>
+                <span class="preco num">R$ 8,90 <small>/un</small></span>
+                <button class="btn btn-secundario" type="button">Adicionar</button>
+              </li>
+          </ul>
+        </section>
+        <aside class="pedido">
+          <header>
+            <h2>Pedido</h2>
+            <span class="suave pequeno">3 itens</span>
+          </header>
+          <div class="rolagem">
+            <ul class="lista">
+              <li class="item">
+                <div>
+                  <div class="desc">Café Pilão Tradicional 500g</div>
+                  <div class="suave pequeno num">2 caixas, 20 un a R$ 18,90</div>
+                </div>
+                <div class="total num">R$ 378,00</div>
+                <div class="controles">
+                  <div class="stepper">
+                    <button type="button" aria-label="Diminuir">−</button>
+                    <input value="2" inputmode="numeric" aria-label="Quantidade" />
+                    <button type="button" aria-label="Aumentar">+</button>
+                  </div>
+                  <label class="desconto">Desc. <input class="campo num" value="0" inputmode="decimal" /> %</label>
+                  <button class="btn btn-fantasma" type="button">Remover</button>
+                </div>
+              </li>
+              <li class="item">
+                <div>
+                  <div class="desc">Café Melitta Extra Forte 250g</div>
+                  <div class="suave pequeno num">30 un a R$ 9,40</div>
+                </div>
+                <div class="total num">R$ 253,80<div class="suave pequeno" style="font-weight:400"><s>R$ 282,00</s></div></div>
+                <div class="controles">
+                  <div class="stepper">
+                    <button type="button" aria-label="Diminuir">−</button>
+                    <input value="30" inputmode="numeric" aria-label="Quantidade" />
+                    <button type="button" aria-label="Aumentar">+</button>
+                  </div>
+                  <label class="desconto">Desc. <input class="campo num excedido" value="10" inputmode="decimal" /> %</label>
+                  <button class="btn btn-fantasma" type="button">Remover</button>
+                </div>
+              </li>
+              <li class="item">
+                <div>
+                  <div class="desc">Açúcar União Refinado 1kg</div>
+                  <div class="suave pequeno num">4 fardos, 40 un a R$ 16,32</div>
+                </div>
+                <div class="total num">R$ 652,70</div>
+                <div class="controles">
+                  <div class="stepper">
+                    <button type="button" aria-label="Diminuir">−</button>
+                    <input value="4" inputmode="numeric" aria-label="Quantidade" />
+                    <button type="button" aria-label="Aumentar">+</button>
+                  </div>
+                  <label class="desconto">Desc. <input class="campo num" value="0" inputmode="decimal" /> %</label>
+                  <button class="btn btn-fantasma" type="button">Remover</button>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="barra aviso">
+            <p class="motivo">Desconto acima da sua alçada de 5%. O pedido vai para aprovação do supervisor.</p>
+            <div class="linha">
+              <div>
+                <div class="valor num">R$ 1.284,50</div>
+                <div class="detalhe num">Desconto de R$ 28,20</div>
+              </div>
+              <button class="btn btn-primario" type="button">Enviar para aprovação</button>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+    <figcaption>Pedido no desktop, a partir de 900px</figcaption>
+  </figure>
+
+</main>
+</body>
+</html>

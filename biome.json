@@ -6,7 +6,12 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!api/src/db/seed.json", "!api/drizzle"]
+    "includes": ["**", "!.docs/mock", "!api/src/db/seed.json", "!api/drizzle"]
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
   },
   "html": {
     "experimentalFullSupportEnabled": true
