@@ -1,15 +1,22 @@
 <script setup lang="ts">
+import { Minus, Plus } from "@lucide/vue";
+import { embalagensMinimas } from "contracts/rules";
 import { type ProdutoBusca, type ProdutoDisponivel, produtoBuscaSchema } from "contracts/schemas";
-import { onUnmounted, ref, watch } from "vue";
+import { computed, onUnmounted, ref, watch } from "vue";
 import { get } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { exibicaoMinimo, exibicaoUnidade, precoPorEmbalagem } from "@/utils/exibicao-produto";
+import { embalagensAoAumentar, validarEmbalagens } from "@/pedido/item";
+import type { ItemPedido } from "@/stores/pedido";
+import { exibicaoEmbalagem, precoDaEmbalagem } from "@/utils/exibicao-produto";
 import { formatarMoeda } from "@/utils/moeda";
 
-const props = defineProps<{ clienteId: string; idsAdicionados: string[] }>();
-const emit = defineEmits<{ adicionar: [produto: ProdutoDisponivel] }>();
+const props = defineProps<{ clienteId: string; itens: ItemPedido[] }>();
+const emit = defineEmits<{
+  adicionar: [produto: ProdutoDisponivel];
+  alterar: [item: ItemPedido, embalagens: number];
+}>();
 
 const MOTIVOS = {
   produto_inativo: "Produto inativo",
@@ -20,6 +27,13 @@ const busca = ref("");
 const resultados = ref<ProdutoBusca[]>([]);
 const buscando = ref(false);
 const erro = ref(false);
+
+const linhas = computed(() =>
+  resultados.value.map((produto) => ({
+    produto,
+    item: props.itens.find((item) => item.produto.id === produto.id),
+  })),
+);
 
 let timer: ReturnType<typeof setTimeout> | undefined;
 let controller: AbortController | null = null;
@@ -64,7 +78,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="bg-background sticky top-0 z-10 px-5 py-3.5 lg:px-0 lg:pt-0">
+  <div class="bg-background sticky top-0 z-10 px-5 py-3.5 lg:px-0 lg:pt-3 lg:pb-4">
     <label for="busca" class="sr-only">Buscar produto</label>
     <Input
       id="busca"
@@ -87,48 +101,64 @@ onUnmounted(() => {
   </p>
   <ul v-else class="divide-y border-y">
     <li
-      v-for="produto in resultados"
+      v-for="{ produto, item } in linhas"
       :key="produto.id"
-      class="grid grid-cols-[1fr_auto] items-end gap-x-3 gap-y-2 px-5 py-3.5 lg:grid-cols-[1fr_auto_auto] lg:items-center lg:px-1"
+      class="grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-0.5 px-5 py-3.5 lg:px-1"
     >
-      <div class="col-span-2 grid gap-1.5 lg:col-span-1">
-        <span class="font-semibold" :class="{ 'text-muted-foreground': !produto.disponivel }">
-          {{ produto.descricao }}
-        </span>
-        <div class="flex flex-wrap items-center gap-1.5">
-          <span v-if="produto.marca" class="text-muted-foreground mr-1 text-[13px]">
-            {{ produto.marca }}
-          </span>
-          <Badge variant="embalagem">{{ exibicaoUnidade(produto) }}</Badge>
-          <Badge v-if="exibicaoMinimo(produto)" variant="embalagem">
-            {{ exibicaoMinimo(produto) }}
-          </Badge>
-          <span class="text-muted-foreground ml-1 text-[13px] tabular-nums">{{ produto.ean }}</span>
-        </div>
-      </div>
+      <span class="font-semibold" :class="{ 'text-muted-foreground': !produto.disponivel }">
+        {{ produto.descricao }}
+      </span>
+      <span v-if="produto.disponivel" class="text-right font-semibold tabular-nums">
+        {{ precoDaEmbalagem(produto, produto.preco_unidade) }}
+      </span>
+
+      <span class="text-muted-foreground col-start-1 text-sm tabular-nums">{{ produto.ean }}</span>
+      <span
+        v-if="produto.disponivel && produto.unidade_venda !== 'UN'"
+        class="text-muted-foreground col-start-2 text-right text-xs tabular-nums"
+      >
+        {{ formatarMoeda(produto.preco_unidade) }}/un
+      </span>
 
       <template v-if="produto.disponivel">
-        <div class="tabular-nums lg:text-right">
-          <span class="text-[17px] font-semibold">{{ formatarMoeda(produto.preco_unidade) }}</span>
-          <span class="text-muted-foreground text-[13px]"> /un</span>
-          <p
-            v-if="precoPorEmbalagem(produto, produto.preco_unidade)"
-            class="text-muted-foreground text-[13px]"
+        <Badge variant="embalagem" class="col-start-1 mt-1">{{ exibicaoEmbalagem(produto) }}</Badge>
+        <div
+          v-if="item"
+          class="bg-input col-start-2 mt-1 inline-flex items-center justify-self-end rounded-full"
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            class="text-foreground size-8"
+            :aria-label="`Diminuir quantidade de ${produto.descricao}`"
+            :disabled="!!validarEmbalagens(item) || item.embalagens <= embalagensMinimas(produto)"
+            @click="emit('alterar', item, item.embalagens - 1)"
           >
-            {{ precoPorEmbalagem(produto, produto.preco_unidade) }}
-          </p>
+            <Minus />
+          </Button>
+          <span class="min-w-6 text-center font-semibold tabular-nums">{{ item.embalagens }}</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            class="text-foreground size-8"
+            :aria-label="`Aumentar quantidade de ${produto.descricao}`"
+            @click="emit('alterar', item, embalagensAoAumentar(item))"
+          >
+            <Plus />
+          </Button>
         </div>
         <Button
+          v-else
           variant="outline"
-          size="sm"
-          class="lg:w-28"
-          :disabled="idsAdicionados.includes(produto.id)"
+          size="icon"
+          class="text-primary col-start-2 mt-1 size-8 justify-self-end rounded-full"
+          :aria-label="`Adicionar ${produto.descricao}`"
           @click="emit('adicionar', produto)"
         >
-          {{ idsAdicionados.includes(produto.id) ? "No pedido" : "Adicionar" }}
+          <Plus />
         </Button>
       </template>
-      <span v-else class="text-muted-foreground col-span-2 text-sm lg:text-right">
+      <span v-else class="text-muted-foreground col-start-1 text-sm">
         {{ MOTIVOS[produto.motivo] }}
       </span>
     </li>

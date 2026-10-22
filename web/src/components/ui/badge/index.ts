@@ -14,7 +14,8 @@ export const badgeVariants = cva(
         destructive:
           "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline: "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
-        embalagem: "rounded-md px-1.5 border-muted-foreground/40 text-foreground",
+        embalagem:
+          "rounded border-transparent bg-muted px-1.5 font-normal text-muted-foreground cursor-default select-none",
         aviso:
           "border-transparent px-0 text-[13px] font-semibold text-warning before:size-1.5 before:rounded-full before:bg-current before:content-['']",
         erro: "border-transparent px-0 text-[13px] font-semibold text-destructive before:size-1.5 before:rounded-full before:bg-current before:content-['']",

@@ -1,6 +1,4 @@
-import { PEDIDO_MINIMO } from "contracts/constants";
 import type { BloqueioDoPedido } from "@/pedido/bloqueios";
-import { formatarMoeda } from "@/utils/moeda";
 
 type ErroDoEnvio =
   | "cliente_nao_encontrado"
@@ -14,9 +12,9 @@ type ErroDoEnvio =
 
 export const MENSAGENS: Record<BloqueioDoPedido | ErroDoEnvio, string> = {
   item_invalido: "Corrija os itens com erro.",
-  desconto_em_mais_de_um_produto: "Desconto permitido em apenas um item do pedido.",
-  abaixo_do_pedido_minimo: `Pedido abaixo do mínimo de ${formatarMoeda(PEDIDO_MINIMO)}.`,
-  credito_insuficiente: "Total acima do crédito disponível do cliente.",
+  desconto_em_mais_de_um_produto: "Desconto permitido em apenas um item.",
+  abaixo_do_pedido_minimo: "Pedido abaixo do mínimo.",
+  credito_insuficiente: "Acima do crédito disponível.",
   cliente_nao_encontrado: "Cliente não encontrado.",
   cliente_fora_da_carteira: "Cliente fora da sua carteira.",
   produto_nao_encontrado: "Produto não encontrado.",

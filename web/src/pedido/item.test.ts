@@ -1,7 +1,7 @@
 import type { ProdutoDisponivel } from "contracts/schemas";
 import { describe, expect, it } from "vitest";
 import type { ItemPedido } from "@/stores/pedido";
-import { emUnidades, itemValido, validarEmbalagens } from "./item";
+import { embalagensAoAumentar, emUnidades, itemValido, validarEmbalagens } from "./item";
 
 function item(produto: Partial<ProdutoDisponivel>, embalagens: number, desconto = 0): ItemPedido {
   return {
@@ -57,5 +57,16 @@ describe("itemValido", () => {
     expect(itemValido(item(acucar, 2, 5))).toBe(true);
     expect(itemValido(item(acucar, 1, 5))).toBe(false);
     expect(itemValido(item(acucar, 2, 150))).toBe(false);
+  });
+});
+
+describe("embalagensAoAumentar", () => {
+  it("soma uma embalagem quando a quantidade é válida", () => {
+    expect(embalagensAoAumentar(item(acucar, 2))).toBe(3);
+  });
+
+  it("vai para o mínimo quando a quantidade é inválida", () => {
+    expect(embalagensAoAumentar(item(acucar, 1))).toBe(2);
+    expect(embalagensAoAumentar(item(acucar, Number.NaN))).toBe(2);
   });
 });

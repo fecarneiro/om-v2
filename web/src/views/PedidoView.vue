@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useMediaQuery } from "@vueuse/core";
 import { totalLiquidoDoPedido } from "contracts/rules";
 import {
   type ClienteCarteira,
@@ -13,15 +14,14 @@ import { ApiError } from "@/api/errors";
 import BuscaProdutos from "@/components/BuscaProdutos.vue";
 import CabecalhoCliente from "@/components/CabecalhoCliente.vue";
 import ItensPedido from "@/components/ItensPedido.vue";
+import ResultadoEnvio from "@/components/ResultadoEnvio.vue";
 import ResumoPedido from "@/components/ResumoPedido.vue";
 import TopoApp from "@/components/TopoApp.vue";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { emUnidades, itemValido, paraEnvio } from "@/pedido/item";
 import { mensagemDoErro } from "@/pedido/mensagens";
 import { usePedidoStore } from "@/stores/pedido";
 import { useSessaoStore } from "@/stores/sessao";
-import { formatarMoeda } from "@/utils/moeda";
 
 const sessao = useSessaoStore();
 const pedido = usePedidoStore();
@@ -35,9 +35,14 @@ const erro = ref<"nao_encontrado" | "falha" | null>(null);
 const pedidoGravado = ref<PedidoEnviado | null>(null);
 const enviando = ref(false);
 const erroEnvio = ref<string | null>(null);
-const aba = ref("produtos");
+const pedidoAberto = ref(false);
+const desktop = useMediaQuery("(min-width: 1024px)");
 
 const itens = computed(() => pedido.itens(clienteId));
+const quantidade = computed(() =>
+  itens.value.length === 1 ? "1 item" : `${itens.value.length} itens`,
+);
+const alcada = computed(() => sessao.vendedor?.alcada_desconto_percentual ?? 0);
 const total = computed(() => totalLiquidoDoPedido(itens.value.filter(itemValido).map(emUnidades)));
 
 async function carregarCliente() {
@@ -48,6 +53,7 @@ async function carregarCliente() {
       clienteCarteiraSchema,
     );
   } catch (e) {
+    if (cliente.value) return;
     erro.value = e instanceof ApiError && e.status === 404 ? "nao_encontrado" : "falha";
   } finally {
     carregando.value = false;
@@ -80,7 +86,7 @@ async function enviar() {
       pedidoEnviadoSchema,
     );
     pedido.esvaziar(clienteId);
-    aba.value = "produtos";
+    pedidoAberto.value = false;
     await carregarCliente();
   } catch (e) {
     erroEnvio.value = mensagemDoEnvio(e);
@@ -104,94 +110,94 @@ async function enviar() {
       Não foi possível carregar o cliente.
     </p>
 
-    <section v-else-if="cliente && pedidoGravado" class="mx-auto w-full max-w-2xl lg:px-8 lg:py-6">
-      <CabecalhoCliente :cliente="cliente" :total-pedido="total" />
-      <div class="grid gap-4 border-t px-5 pt-8 lg:px-0">
-        <p class="text-xl font-semibold">
-          {{
-            pedidoGravado.status === "aguardando_aprovacao"
-              ? "Pedido aguardando aprovação do supervisor."
-              : "Pedido enviado."
-          }}
-        </p>
-        <p class="text-muted-foreground tabular-nums">
-          Total de {{ formatarMoeda(pedidoGravado.total) }}
-        </p>
-        <div class="flex flex-wrap gap-3">
-          <Button size="lg" @click="pedidoGravado = null">Novo pedido para este cliente</Button>
-          <Button size="lg" variant="ghost" as-child>
-            <RouterLink to="/clientes">Voltar para a carteira</RouterLink>
-          </Button>
-        </div>
-      </div>
-    </section>
-
-    <Tabs
-      v-else-if="cliente"
-      v-model="aba"
-      class="gap-0 lg:grid lg:min-h-0 lg:grid-cols-[1fr_420px]"
+    <div
+      v-else-if="cliente && !pedidoGravado"
+      class="lg:grid lg:min-h-0 lg:grid-cols-[1fr_420px]"
     >
-      <section class="lg:overflow-y-auto lg:px-8 lg:pt-6">
-        <CabecalhoCliente :cliente="cliente" :total-pedido="total" />
-
-        <TabsList class="px-2 lg:hidden">
-          <TabsTrigger value="produtos">Produtos</TabsTrigger>
-          <TabsTrigger value="pedido">
-            No pedido
-            <span
-              v-if="itens.length > 0"
-              class="bg-primary text-primary-foreground min-w-5 rounded-full px-1.5 text-xs tabular-nums"
-            >
-              {{ itens.length }}
-            </span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent
-          value="produtos"
-          force-mount
-          class="data-[state=inactive]:hidden lg:data-[state=inactive]:block"
-        >
-          <BuscaProdutos
-            :cliente-id="clienteId"
-            :ids-adicionados="itens.map((item) => item.produto.id)"
-            @adicionar="(produto) => pedido.adicionar(clienteId, produto)"
-          />
-        </TabsContent>
+      <section class="lg:overflow-y-auto lg:px-8">
+        <CabecalhoCliente class="lg:pt-6" :cliente="cliente" :total-pedido="total" />
+        <BuscaProdutos
+          :cliente-id="clienteId"
+          :itens="itens"
+          @adicionar="(produto) => pedido.adicionar(clienteId, produto)"
+          @alterar="pedido.alterarEmbalagens"
+        />
       </section>
 
-      <aside class="lg:bg-card lg:flex lg:min-h-0 lg:flex-col lg:border-l">
-        <div class="hidden items-baseline justify-between border-b px-6 pt-6 pb-3 lg:flex">
-          <h2 class="font-semibold">Pedido</h2>
-          <span class="text-muted-foreground text-sm">
-            {{ itens.length === 1 ? "1 item" : `${itens.length} itens` }}
-          </span>
-        </div>
-
-        <TabsContent
-          value="pedido"
-          force-mount
-          class="data-[state=inactive]:hidden lg:flex-1 lg:overflow-y-auto lg:data-[state=inactive]:block"
-        >
+      <!-- Desktop -->
+      <aside v-if="desktop" class="bg-card flex min-h-0 flex-col border-l">
+        <h2 class="border-b px-6 pt-6 pb-3 font-semibold">Pedido · {{ quantidade }}</h2>
+        <div class="flex-1 overflow-y-auto">
           <ItensPedido
             :itens="itens"
-            :alcada="sessao.vendedor?.alcada_desconto_percentual ?? 0"
+            :alcada="alcada"
             @alterar="pedido.alterarEmbalagens"
             @alterar-desconto="pedido.alterarDesconto"
             @remover="(item) => pedido.remover(clienteId, item)"
           />
-        </TabsContent>
-
+        </div>
         <ResumoPedido
-          class="fixed inset-x-0 bottom-0 z-20 lg:static"
+          variante="detalhado"
+          class="bg-background"
           :itens="itens"
           :cliente="cliente"
-          :alcada="sessao.vendedor?.alcada_desconto_percentual ?? 0"
+          :alcada="alcada"
           :enviando="enviando"
           :erro-envio="erroEnvio"
           @enviar="enviar"
         />
       </aside>
-    </Tabs>
+
+      <!-- Mobile -->
+      <template v-else>
+        <ResumoPedido
+          variante="compacto"
+          :itens="itens"
+          :cliente="cliente"
+          :alcada="alcada"
+          :enviando="enviando"
+          :erro-envio="erroEnvio"
+          @enviar="enviar"
+          @abrir="pedidoAberto = true"
+        />
+        <Sheet v-model:open="pedidoAberto">
+          <SheetContent
+            side="bottom"
+            class="max-h-[85dvh] gap-0 rounded-t-2xl"
+            :aria-describedby="undefined"
+          >
+            <SheetHeader class="border-b px-5 pt-5 pb-3">
+              <SheetTitle>Pedido · {{ quantidade }}</SheetTitle>
+            </SheetHeader>
+            <div class="flex-1 overflow-y-auto">
+              <ItensPedido
+                :itens="itens"
+                :alcada="alcada"
+                @alterar="pedido.alterarEmbalagens"
+                @alterar-desconto="pedido.alterarDesconto"
+                @remover="(item) => pedido.remover(clienteId, item)"
+              />
+            </div>
+            <ResumoPedido
+              variante="detalhado"
+              :itens="itens"
+              :cliente="cliente"
+              :alcada="alcada"
+              :enviando="enviando"
+              :erro-envio="erroEnvio"
+              @enviar="enviar"
+            />
+          </SheetContent>
+        </Sheet>
+      </template>
+    </div>
+
+    <ResultadoEnvio
+      v-else-if="cliente && pedidoGravado"
+      :cliente="cliente"
+      :pedido="pedidoGravado"
+      :total="total"
+      @novo="pedidoGravado = null"
+    />
   </div>
 </template>

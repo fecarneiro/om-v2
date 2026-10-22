@@ -1,4 +1,4 @@
-import { validarDesconto, validarQuantidade } from "contracts/rules";
+import { embalagensMinimas, validarDesconto, validarQuantidade } from "contracts/rules";
 import type { ItemPedido } from "@/stores/pedido";
 
 export function emUnidades(item: ItemPedido) {
@@ -23,4 +23,8 @@ export function validarEmbalagens(item: ItemPedido) {
 
 export function itemValido(item: ItemPedido) {
   return validarEmbalagens(item) === null && validarDesconto(item.desconto_percentual) === null;
+}
+
+export function embalagensAoAumentar(item: ItemPedido) {
+  return validarEmbalagens(item) ? embalagensMinimas(item.produto) : item.embalagens + 1;
 }

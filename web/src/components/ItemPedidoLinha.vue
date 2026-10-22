@@ -10,7 +10,7 @@ import {
 import { computed } from "vue";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { emUnidades, validarEmbalagens } from "@/pedido/item";
+import { embalagensAoAumentar, emUnidades, validarEmbalagens } from "@/pedido/item";
 import type { ItemPedido } from "@/stores/pedido";
 import { exibicaoEmbalagens } from "@/utils/exibicao-produto";
 import { formatarMoeda } from "@/utils/moeda";
@@ -30,10 +30,6 @@ const valido = computed(() => !erroQuantidade.value && !erroDesconto.value);
 const bruto = computed(() => totalBrutoDoItem(emUnidades(props.item)));
 const liquido = computed(() => totalLiquidoDoItem(emUnidades(props.item)));
 const acima = computed(() => acimaDaAlcada(props.item.desconto_percentual, props.alcada));
-
-function aumentar() {
-  emit("alterar", erroQuantidade.value ? minimo.value : props.item.embalagens + 1);
-}
 
 function valorDigitado(evento: Event) {
   return Number((evento.target as HTMLInputElement).value);
@@ -95,7 +91,7 @@ function alterarDesconto(valor: string | number) {
             size="icon"
             class="text-foreground"
             :aria-label="`Aumentar quantidade de ${produto.descricao}`"
-            @click="aumentar"
+            @click="emit('alterar', embalagensAoAumentar(item))"
           >
             <Plus />
           </Button>
@@ -131,7 +127,7 @@ function alterarDesconto(valor: string | number) {
       Informe um desconto inteiro entre 0 e 100.
     </p>
     <p v-else-if="acima" class="text-warning col-span-2 text-sm">
-      Desconto acima da sua alçada de {{ alcada }}%.
+      Acima da sua alçada de {{ alcada }}%.
     </p>
   </div>
 </template>

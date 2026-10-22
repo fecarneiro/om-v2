@@ -14,19 +14,13 @@ export function exibicaoEmbalagens(produto: Produto, embalagens: number) {
   return (embalagens === 1 ? nome.singular : nome.plural).toLowerCase();
 }
 
-export function exibicaoUnidade(produto: Produto) {
+export function exibicaoEmbalagem(produto: Produto) {
   const nome = UNIDADE_VENDA[produto.unidade_venda].singular;
-  return produto.unidade_venda === "UN" ? nome : `${nome} c/ ${produto.fator_embalagem}`;
-}
-
-export function exibicaoMinimo(produto: Produto) {
   const minimo = embalagensMinimas(produto);
-  if (minimo === 1) return null;
-  return `Mín. ${minimo} ${exibicaoEmbalagens(produto, minimo)}`;
+  const embalagem = produto.unidade_venda === "UN" ? nome : `${nome} c/ ${produto.fator_embalagem}`;
+  return minimo > 1 ? `${embalagem} (mín. ${minimo})` : embalagem;
 }
 
-export function precoPorEmbalagem(produto: Produto, precoUnidade: string) {
-  if (produto.unidade_venda === "UN") return null;
-  const embalagem = formatarMoeda(new Big(precoUnidade).times(produto.fator_embalagem).toFixed(2));
-  return `${embalagem} por ${exibicaoEmbalagens(produto, 1)}`;
+export function precoDaEmbalagem(produto: Produto, precoUnidade: string) {
+  return formatarMoeda(new Big(precoUnidade).times(produto.fator_embalagem).toFixed(2));
 }

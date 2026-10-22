@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChevronUp } from "@lucide/vue";
 import Big from "big.js";
 import { PEDIDO_MINIMO } from "contracts/constants";
 import {
@@ -7,7 +8,7 @@ import {
   totalLiquidoDoPedido,
 } from "contracts/rules";
 import type { ClienteCarteira } from "contracts/schemas";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,7 +18,6 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { bloqueiosDoPedido } from "@/pedido/bloqueios";
@@ -27,13 +27,16 @@ import type { ItemPedido } from "@/stores/pedido";
 import { formatarMoeda } from "@/utils/moeda";
 
 const props = defineProps<{
+  variante: "compacto" | "detalhado";
   itens: ItemPedido[];
   cliente: ClienteCarteira;
   alcada: number;
   enviando: boolean;
   erroEnvio: string | null;
 }>();
-const emit = defineEmits<{ enviar: [] }>();
+const emit = defineEmits<{ enviar: []; abrir: [] }>();
+
+const confirmando = ref(false);
 
 const vazio = computed(() => props.itens.length === 0);
 const itensEmUnidades = computed(() => props.itens.filter(itemValido).map(emUnidades));
@@ -44,13 +47,13 @@ const faltaParaMinimo = computed(() => new Big(PEDIDO_MINIMO).minus(bruto.value)
 const excedente = computed(() => liquido.value.minus(props.cliente.credito_disponivel));
 const status = computed(() => definirStatusEnvio(props.itens, props.alcada));
 const bloqueios = computed(() => (vazio.value ? [] : bloqueiosDoPedido(props.itens, props.cliente)));
+const abaixoDoMinimo = computed(() => bloqueios.value.includes("abaixo_do_pedido_minimo"));
+const erros = computed(() => bloqueios.value.filter((b) => b !== "abaixo_do_pedido_minimo"));
 const paraAprovacao = computed(() => status.value === "aguardando_aprovacao");
 
-const estado = computed(() => {
-  if (bloqueios.value.length > 0 || props.erroEnvio) return "erro";
-  if (paraAprovacao.value) return "aviso";
-  return null;
-});
+const progressoMinimo = computed(() =>
+  Math.min(bruto.value.div(PEDIDO_MINIMO).times(100).toNumber(), 100),
+);
 
 const rotulo = computed(() => {
   if (props.enviando) return "Enviando...";
@@ -61,70 +64,103 @@ const quantidade = computed(() =>
   props.itens.length === 1 ? "1 item" : `${props.itens.length} itens`,
 );
 
-const detalhe = computed(() => {
-  if (vazio.value) return "Nenhum item adicionado";
-  if (desconto.value.lte(0)) return quantidade.value;
-  return `${quantidade.value}, desconto de ${formatarMoeda(desconto.value.toFixed(2))}`;
-});
+const podeEnviar = computed(() => !vazio.value && bloqueios.value.length === 0 && !props.enviando);
 </script>
 
 <template>
   <div
-    class="bg-card grid gap-3 border-t px-5 pt-3.5 pb-5 lg:bg-background lg:px-6 lg:pb-6"
-    :class="{
-      'shadow-[inset_0_3px_0_var(--destructive)]': estado === 'erro',
-      'shadow-[inset_0_3px_0_var(--warning)]': estado === 'aviso',
-    }"
+    class="grid gap-3 border-t px-5 pt-4 pb-5"
+    :class="
+      variante === 'compacto' ? 'bg-card fixed inset-x-0 bottom-0 z-20' : 'relative lg:px-6 lg:pb-6'
+    "
   >
-    <ul v-if="bloqueios.length > 0" class="text-destructive grid gap-1 text-sm">
-      <li v-for="bloqueio in bloqueios" :key="bloqueio">
-        {{ MENSAGENS[bloqueio] }}
-        <template v-if="bloqueio === 'abaixo_do_pedido_minimo'">
-          Faltam {{ formatarMoeda(faltaParaMinimo.toFixed(2)) }}.
-        </template>
+    <div
+      v-if="abaixoDoMinimo"
+      role="progressbar"
+      aria-label="Progresso até o pedido mínimo"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      :aria-valuenow="Math.round(progressoMinimo)"
+      class="bg-secondary absolute inset-x-0 -top-px h-0.75"
+    >
+      <div class="bg-muted-foreground h-full" :style="{ width: `${progressoMinimo}%` }" />
+    </div>
+
+    <p v-if="variante === 'compacto' && abaixoDoMinimo" class="text-muted-foreground text-sm">
+      Faltam {{ formatarMoeda(faltaParaMinimo.toFixed(2)) }} para o mínimo
+    </p>
+
+    <ul v-if="erros.length > 0" class="text-destructive grid gap-1 text-sm">
+      <li v-for="bloqueio in erros" :key="bloqueio">
         <template v-if="bloqueio === 'credito_insuficiente'">
-          Excede em {{ formatarMoeda(excedente.toFixed(2)) }}.
+          Acima do crédito disponível em {{ formatarMoeda(excedente.toFixed(2)) }}.
         </template>
+        <template v-else>{{ MENSAGENS[bloqueio] }}</template>
       </li>
     </ul>
     <p v-else-if="paraAprovacao" class="text-warning text-sm">
-      Desconto acima da sua alçada de {{ alcada }}%. O pedido vai para aprovação do supervisor.
+      Pedido sujeito à aprovação do supervisor.
     </p>
     <p v-if="erroEnvio" class="text-destructive text-sm">{{ erroEnvio }}</p>
 
-    <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-      <div class="whitespace-nowrap tabular-nums">
+    <div v-if="variante === 'compacto'" class="flex items-center justify-between gap-4">
+      <div class="tabular-nums">
+        <p v-if="vazio" class="text-muted-foreground text-[13px]">Nenhum item no pedido</p>
+        <button
+          v-else
+          type="button"
+          class="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-[13px]"
+          @click="emit('abrir')"
+        >
+          Pedido · {{ quantidade }}
+          <ChevronUp class="size-4" />
+        </button>
         <p class="text-2xl font-bold tracking-tight" :class="{ 'text-muted-foreground': vazio }">
           {{ formatarMoeda(liquido.toFixed(2)) }}
         </p>
-        <p class="text-muted-foreground text-[13px]">{{ detalhe }}</p>
       </div>
-
-      <AlertDialog>
-        <AlertDialogTrigger as-child>
-          <Button size="lg" class="grow" :disabled="vazio || bloqueios.length > 0 || enviando">
-            {{ rotulo }}
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent class="bg-card">
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {{ paraAprovacao ? "Enviar pedido para aprovação?" : "Enviar pedido?" }}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {{ quantidade }} para {{ cliente.nome_fantasia }}, total de
-              {{ formatarMoeda(liquido.toFixed(2)) }}.
-              <template v-if="paraAprovacao">
-                O pedido fica aguardando aprovação do supervisor.
-              </template>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Voltar</AlertDialogCancel>
-            <AlertDialogAction @click="emit('enviar')">{{ rotulo }}</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Button size="lg" :disabled="!podeEnviar" @click="confirmando = true">{{ rotulo }}</Button>
     </div>
+
+    <template v-else>
+      <dl class="grid grid-cols-[1fr_auto] items-baseline gap-y-0.5 tabular-nums">
+        <template v-if="desconto.gt(0)">
+          <dt class="text-muted-foreground text-sm">Subtotal</dt>
+          <dd class="text-right text-sm">{{ formatarMoeda(bruto.toFixed(2)) }}</dd>
+          <dt class="text-muted-foreground text-sm">Desconto</dt>
+          <dd class="text-right text-sm">− {{ formatarMoeda(desconto.toFixed(2)) }}</dd>
+        </template>
+        <dt class="font-semibold">Total</dt>
+        <dd
+          class="text-right text-2xl font-bold tracking-tight"
+          :class="{ 'text-muted-foreground': vazio }"
+        >
+          {{ formatarMoeda(liquido.toFixed(2)) }}
+        </dd>
+        <dd v-if="abaixoDoMinimo" class="text-muted-foreground col-span-2 text-right text-sm">
+          Faltam {{ formatarMoeda(faltaParaMinimo.toFixed(2)) }} para o mínimo
+        </dd>
+      </dl>
+      <Button size="lg" class="w-full" :disabled="!podeEnviar" @click="confirmando = true">
+        {{ rotulo }}
+      </Button>
+    </template>
+
+    <AlertDialog v-model:open="confirmando">
+      <AlertDialogContent class="bg-card">
+        <AlertDialogHeader>
+          <AlertDialogTitle>
+            {{ paraAprovacao ? "Enviar pedido para aprovação?" : "Enviar pedido?" }}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            {{ quantidade }}, total de {{ formatarMoeda(liquido.toFixed(2)) }}.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Voltar</AlertDialogCancel>
+          <AlertDialogAction @click="emit('enviar')">{{ rotulo }}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>
