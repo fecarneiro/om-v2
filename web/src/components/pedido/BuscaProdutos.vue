@@ -112,7 +112,10 @@ onUnmounted(() => {
         {{ precoDaEmbalagem(produto, produto.preco_unidade) }}
       </span>
 
-      <span class="text-muted-foreground col-start-1 text-sm tabular-nums">{{ produto.ean }}</span>
+      <span v-if="produto.marca" class="text-foreground/80 col-start-1 text-sm">{{ produto.marca }}</span>
+      <span class="text-muted-foreground col-start-1 text-xs tabular-nums">
+        {{ produto.sku }} · {{ produto.ean }}
+      </span>
       <span
         v-if="produto.disponivel && produto.unidade_venda !== 'UN'"
         class="text-muted-foreground col-start-2 text-right text-xs tabular-nums"
