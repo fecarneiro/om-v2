@@ -11,6 +11,7 @@ import {
   totalBrutoDoPedido,
   totalLiquidoDoItem,
   totalLiquidoDoPedido,
+  unidadesEmEmbalagens,
   validarCredito,
   validarDesconto,
   validarDescontos,
@@ -291,6 +292,21 @@ describe("embalagensMinimas", () => {
 
   it("exige 2 embalagens quando o produto é vendido só em múltiplos", () => {
     expect(embalagensMinimas({ venda_somente_multiplo: true })).toBe(2);
+  });
+});
+
+describe("unidadesEmEmbalagens", () => {
+  it("converte unidades em embalagens", () => {
+    expect(unidadesEmEmbalagens(leite, 24)).toBe(2);
+    expect(unidadesEmEmbalagens(arroz, 3)).toBe(3);
+  });
+
+  it("arredonda para cima quando as unidades não fecham a embalagem", () => {
+    expect(unidadesEmEmbalagens(oleo, 30)).toBe(2);
+  });
+
+  it("respeita o mínimo de embalagens do múltiplo", () => {
+    expect(unidadesEmEmbalagens(leite, 12)).toBe(2);
   });
 });
 

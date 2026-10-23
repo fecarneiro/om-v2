@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { LIMITE_HISTORICO_PEDIDOS } from "contracts/constants";
 import {
   definirStatusEnvio,
   disponibilidadeDoProduto,
@@ -10,8 +11,8 @@ import {
   validarPedidoMinimo,
   validarQuantidade,
 } from "contracts/rules";
-import type { NovoPedido, PedidoEnviado } from "contracts/schemas";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import type { NovoPedido, PedidoEnviado, PedidoHistorico } from "contracts/schemas";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import {
   clientes,
@@ -98,4 +99,61 @@ export async function enviarPedido(db: Db, input: NovoPedido): Promise<PedidoEnv
 
     return { ...pedido, total: total.toFixed(2) };
   });
+}
+
+export async function listarUltimosPedidosPrecoAtual(
+  db: Db,
+  vendedorId: string,
+  clienteId: string,
+): Promise<PedidoHistorico[] | undefined> {
+  const [cliente] = await db
+    .select()
+    .from(clientes)
+    .where(and(eq(clientes.id, clienteId), eq(clientes.vendedor_id, vendedorId)));
+
+  if (!cliente) return undefined;
+
+  const ultimosPedidos = await db
+    .select()
+    .from(pedidos)
+    .where(eq(pedidos.cliente_id, clienteId))
+    .orderBy(desc(pedidos.data))
+    .limit(LIMITE_HISTORICO_PEDIDOS);
+
+  if (ultimosPedidos.length === 0) return [];
+
+  const { tabela_preco_id } = tabelaDoCliente(cliente);
+
+  const itensComPrecoAtual = await db
+    .select({
+      pedido_id: pedidos_itens.pedido_id,
+      quantidade: pedidos_itens.quantidade,
+      produto: produtos,
+      preco_unidade: tabelas_preco_itens.preco_unidade,
+    })
+    .from(pedidos_itens)
+    .innerJoin(produtos, eq(produtos.id, pedidos_itens.produto_id))
+    .leftJoin(
+      tabelas_preco_itens,
+      and(
+        eq(tabelas_preco_itens.produto_id, produtos.id),
+        eq(tabelas_preco_itens.tabela_preco_id, tabela_preco_id),
+      ),
+    )
+    .where(
+      inArray(
+        pedidos_itens.pedido_id,
+        ultimosPedidos.map((pedido) => pedido.id),
+      ),
+    );
+
+  return ultimosPedidos.map((pedido) => ({
+    ...pedido,
+    itens: itensComPrecoAtual
+      .filter((item) => item.pedido_id === pedido.id)
+      .map((item) => ({
+        quantidade: item.quantidade,
+        produto: { ...item.produto, ...disponibilidadeDoProduto(item.produto, item.preco_unidade) },
+      })),
+  }));
 }

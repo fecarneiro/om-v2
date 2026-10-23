@@ -2,6 +2,7 @@ import {
   clienteCarteiraSchema,
   novoPedidoSchema,
   pedidoEnviadoSchema,
+  pedidoHistoricoSchema,
   produtoBuscaSchema,
   vendedorSchema,
 } from "contracts/schemas";
@@ -82,6 +83,30 @@ export const openapi = {
             produtoBuscaSchema.array(),
           ),
           400: respostaDeErro("Input inválido"),
+        },
+      },
+    },
+    "/clientes/{clienteId}/pedidos": {
+      get: {
+        summary: "Últimos pedidos do cliente, com disponibilidade e preço atuais",
+        parameters: [
+          parametroDeCaminho("clienteId", "C001"),
+          {
+            name: "vendedor_id",
+            in: "query",
+            required: true,
+            description: "Vendedor da carteira do cliente",
+            schema: { type: "string" },
+            example: "V01",
+          },
+        ],
+        responses: {
+          200: resposta(
+            "Pedidos do mais recente para o mais antigo",
+            pedidoHistoricoSchema.array(),
+          ),
+          400: respostaDeErro("Input inválido"),
+          404: respostaDeErro("Cliente inexistente ou fora da carteira"),
         },
       },
     },

@@ -4,7 +4,7 @@ import { db } from "../db/client.js";
 import { clientes, pedidos } from "../db/schema.js";
 import { seed } from "../db/seed.js";
 import { PedidoInvalidoError } from "./pedidos.errors.js";
-import { enviarPedido } from "./pedidos.service.js";
+import { enviarPedido, listarUltimosPedidosPrecoAtual } from "./pedidos.service.js";
 
 async function creditoUtilizado(clienteId: string) {
   const [cliente] = await db.select().from(clientes).where(eq(clientes.id, clienteId));
@@ -128,5 +128,35 @@ describe("enviarPedido", () => {
       expect(rejeitado.reason.message).toBe("credito_insuficiente");
     }
     expect(await creditoUtilizado("C002")).toBe("11953.48");
+  });
+});
+
+describe("listarUltimosPedidosPrecoAtual", () => {
+  it("lista os pedidos do mais recente para o mais antigo, com o preço atual da tabela", async () => {
+    const historico = await listarUltimosPedidosPrecoAtual(db, "V01", "C001");
+
+    expect(historico?.map((pedido) => pedido.id)).toEqual(["PH002", "PH001"]);
+    expect(historico?.[0].itens[0]).toMatchObject({
+      quantidade: 15,
+      produto: { id: "P002", disponivel: true, preco_unidade: "7.49" },
+    });
+  });
+
+  it("marca como indisponível o produto que hoje está inativo", async () => {
+    const historico = await listarUltimosPedidosPrecoAtual(db, "V01", "C001");
+    const ph001 = historico?.find((pedido) => pedido.id === "PH001");
+
+    expect(ph001?.itens.find((item) => item.produto.id === "P022")?.produto).toMatchObject({
+      disponivel: false,
+      motivo: "produto_inativo",
+    });
+  });
+
+  it("não devolve histórico de cliente de outra carteira", async () => {
+    expect(await listarUltimosPedidosPrecoAtual(db, "V02", "C001")).toBeUndefined();
+  });
+
+  it("devolve lista vazia para cliente sem pedidos", async () => {
+    expect(await listarUltimosPedidosPrecoAtual(db, "V01", "C002")).toEqual([]);
   });
 });

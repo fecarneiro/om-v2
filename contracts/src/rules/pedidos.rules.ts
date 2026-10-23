@@ -41,6 +41,13 @@ export function embalagensMinimas(produto: Pick<Produto, "venda_somente_multiplo
   return produto.venda_somente_multiplo ? MINIMO_EMBALAGENS : 1;
 }
 
+export function unidadesEmEmbalagens(
+  produto: Pick<Produto, "fator_embalagem" | "venda_somente_multiplo">,
+  quantidade: number,
+) {
+  return Math.max(Math.ceil(quantidade / produto.fator_embalagem), embalagensMinimas(produto));
+}
+
 export function validarQuantidade(
   produto: Pick<Produto, "fator_embalagem" | "venda_somente_multiplo">,
   quantidade: number,
