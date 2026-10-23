@@ -1,4 +1,10 @@
-import { embalagensMinimas, validarDesconto, validarQuantidade } from "contracts/rules";
+import {
+  embalagensMinimas,
+  unidadesEmEmbalagens,
+  validarDesconto,
+  validarQuantidade,
+} from "contracts/rules";
+import type { PedidoHistorico } from "contracts/schemas";
 import type { ItemPedido } from "@/stores/pedido";
 
 export function itemEmUnidades(item: ItemPedido) {
@@ -27,4 +33,17 @@ export function itemValido(item: ItemPedido) {
 
 export function incrementarEmbalagens(item: ItemPedido) {
   return validarEmbalagens(item) ? embalagensMinimas(item.produto) : item.embalagens + 1;
+}
+
+export function itensParaRepetir(historico: PedidoHistorico) {
+  const itens: ItemPedido[] = [];
+  for (const item of historico.itens) {
+    if (!item.produto.disponivel) continue;
+    itens.push({
+      produto: item.produto,
+      embalagens: unidadesEmEmbalagens(item.produto, item.quantidade),
+      desconto_percentual: 0,
+    });
+  }
+  return itens;
 }

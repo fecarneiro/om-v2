@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { History } from "@lucide/vue";
 import { useMediaQuery } from "@vueuse/core";
 import { totalLiquidoDoPedido } from "contracts/rules";
 import {
   type ClienteCarteira,
   clienteCarteiraSchema,
   type PedidoEnviado,
+  type PedidoHistorico,
   pedidoEnviadoSchema,
+  pedidoHistoricoSchema,
 } from "contracts/schemas";
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
@@ -17,6 +20,18 @@ import CabecalhoCliente from "@/components/pedido/CabecalhoCliente.vue";
 import ItensPedido from "@/components/pedido/ItensPedido.vue";
 import ResultadoEnvio from "@/components/pedido/ResultadoEnvio.vue";
 import ResumoPedido from "@/components/pedido/ResumoPedido.vue";
+import UltimosPedidos from "@/components/pedido/UltimosPedidos.vue";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { itemEmUnidades, itemParaApi, itemValido } from "@/regras/item-pedido";
 import { usePedidoStore } from "@/stores/pedido";
@@ -37,6 +52,11 @@ const enviando = ref(false);
 const erroEnvio = ref<string | null>(null);
 const pedidoAberto = ref(false);
 const desktop = useMediaQuery("(min-width: 1024px)");
+
+const ultimosPedidos = ref<PedidoHistorico[]>([]);
+const historicoAberto = ref(false);
+const confirmandoRepeticao = ref(false);
+const pedidoParaRepetir = ref<PedidoHistorico | null>(null);
 
 const itens = computed(() => pedido.itens(clienteId));
 const textoItens = computed(() =>
@@ -60,7 +80,35 @@ async function carregarCliente() {
   }
 }
 
-onMounted(carregarCliente);
+async function carregarHistorico() {
+  if (!sessao.vendedor) return;
+  try {
+    ultimosPedidos.value = await get(
+      `/clientes/${clienteId}/pedidos?vendedor_id=${sessao.vendedor.id}`,
+      pedidoHistoricoSchema.array(),
+    );
+  } catch {
+    ultimosPedidos.value = [];
+  }
+}
+
+onMounted(() => {
+  carregarCliente();
+  carregarHistorico();
+});
+
+function repetir(historico: PedidoHistorico) {
+  pedidoParaRepetir.value = historico;
+  if (itens.value.length) confirmandoRepeticao.value = true;
+  else confirmarRepeticao();
+}
+
+function confirmarRepeticao() {
+  if (!pedidoParaRepetir.value) return;
+  pedido.repetir(clienteId, pedidoParaRepetir.value);
+  pedidoParaRepetir.value = null;
+  historicoAberto.value = false;
+}
 
 function mensagemErroEnvio(e: unknown) {
   if (!(e instanceof ApiError)) return "Não foi possível enviar o pedido. Tente de novo.";
@@ -87,7 +135,7 @@ async function enviar() {
     );
     pedido.esvaziar(clienteId);
     pedidoAberto.value = false;
-    await carregarCliente();
+    await Promise.all([carregarCliente(), carregarHistorico()]);
   } catch (e) {
     erroEnvio.value = mensagemErroEnvio(e);
   } finally {
@@ -115,7 +163,17 @@ async function enviar() {
       class="lg:grid lg:min-h-0 lg:grid-cols-[1fr_420px]"
     >
       <section class="lg:overflow-y-auto lg:px-8">
-        <CabecalhoCliente class="lg:pt-6" :cliente="cliente" :total-pedido="total" />
+        <CabecalhoCliente class="lg:pt-6" :cliente="cliente" :total-pedido="total">
+          <Button
+            variant="ghost"
+            size="icon"
+            class="text-foreground border"
+            aria-label="Últimos pedidos"
+            @click="historicoAberto = true"
+          >
+            <History />
+          </Button>
+        </CabecalhoCliente>
         <BuscaProdutos
           :cliente-id="clienteId"
           :itens="itens"
@@ -190,6 +248,37 @@ async function enviar() {
           </SheetContent>
         </Sheet>
       </template>
+
+      <Sheet v-model:open="historicoAberto">
+        <SheetContent
+          :side="desktop ? 'right' : 'bottom'"
+          class="gap-0"
+          :class="desktop ? 'w-110 sm:max-w-none' : 'max-h-[85dvh] rounded-t-2xl'"
+          :aria-describedby="undefined"
+        >
+          <SheetHeader class="border-b px-5 pt-5 pb-3">
+            <SheetTitle>Últimos pedidos</SheetTitle>
+          </SheetHeader>
+          <div class="flex-1 overflow-y-auto">
+            <UltimosPedidos :pedidos="ultimosPedidos" @repetir="repetir" />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <AlertDialog v-model:open="confirmandoRepeticao">
+        <AlertDialogContent class="bg-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Substituir os itens do pedido atual?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A montagem atual do pedido possui {{ textoItens }}. Ao repetir o histórico, eles serão substituídos pelos itens do pedido escolhido.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction @click="confirmarRepeticao">Substituir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
 
     <ResultadoEnvio

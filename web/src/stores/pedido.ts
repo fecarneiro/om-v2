@@ -1,7 +1,8 @@
 import { embalagensMinimas } from "contracts/rules";
-import type { ProdutoDisponivel } from "contracts/schemas";
+import type { PedidoHistorico, ProdutoDisponivel } from "contracts/schemas";
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import { itensParaRepetir } from "@/regras/item-pedido";
 
 export type ItemPedido = {
   produto: ProdutoDisponivel;
@@ -38,6 +39,10 @@ export const usePedidoStore = defineStore("pedido", () => {
     );
   }
 
+  function repetir(clienteId: string, historico: PedidoHistorico) {
+    itensPorCliente.value[clienteId] = itensParaRepetir(historico);
+  }
+
   function esvaziar(clienteId: string) {
     itensPorCliente.value[clienteId] = [];
   }
@@ -46,5 +51,14 @@ export const usePedidoStore = defineStore("pedido", () => {
     itensPorCliente.value = {};
   }
 
-  return { itens, adicionar, alterarEmbalagens, alterarDesconto, remover, esvaziar, limpar };
+  return {
+    itens,
+    adicionar,
+    alterarEmbalagens,
+    alterarDesconto,
+    remover,
+    repetir,
+    esvaziar,
+    limpar,
+  };
 });

@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Mock v3 | Repetir pedido</title>
+<style>
+  :root {
+    --bg: #12191e; --card: #1e252b; --fg: #e9eef2; --muted: #2b333a; --mfg: #8c98a2;
+    --border: #2f383f; --primary: #3d9df0; --pfg: #06121c; --erro: #e5584a; --aviso: #e0a43a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0b1013; color: var(--fg); font: 14px/1.4 system-ui, sans-serif; padding: 32px; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  h3 { font-size: 13px; margin: 36px 0 14px; color: var(--mfg); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+  .sub { color: var(--mfg); max-width: 900px; }
+  .grade { display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start; }
+  .cenario { width: 360px; }
+  .cenario h4 { font-size: 15px; margin-bottom: 4px; }
+  .tel { position: relative; height: 720px; background: var(--bg); border: 1px solid var(--border); border-radius: 28px; overflow: hidden; }
+  .topo { display: flex; justify-content: space-between; padding: 16px 20px 8px; color: var(--mfg); font-size: 13px; }
+  .cab { padding: 2px 20px 16px; display: grid; gap: 12px; }
+  .nome { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .nome h4 { font-size: 24px; font-weight: 700; letter-spacing: -.01em; }
+  .badge-aviso { font-size: 12px; color: var(--aviso); border: 1px solid color-mix(in srgb, var(--aviso) 45%, transparent); border-radius: 99px; padding: 1px 8px; }
+  .credito { display: grid; gap: 6px; }
+  .credito .linha { font-size: 13px; }
+  .fina { height: 4px; border-radius: 9px; background: var(--muted); overflow: hidden; }
+  .fina i { display: block; height: 100%; background: var(--primary); }
+  .m { color: var(--mfg); }
+  .s { font-size: 13px; }
+  .xs { font-size: 12px; }
+  .aviso { color: var(--aviso); }
+  .erro { color: var(--erro); }
+  .abas { display: flex; gap: 4px; padding: 6px 8px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .abas div { flex: 1; text-align: center; padding: 7px; border-radius: 8px; font-size: 13px; color: var(--mfg); }
+  .abas .ativa { background: var(--muted); color: var(--fg); }
+  .cont { background: var(--primary); color: var(--pfg); border-radius: 99px; padding: 0 6px; font-size: 11px; margin-left: 4px; }
+  .busca { padding: 12px 20px; }
+  .input { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; background: var(--card); }
+  ul { list-style: none; border-top: 1px solid var(--border); }
+  li { border-bottom: 1px solid var(--border); padding: 12px 20px; }
+  .linha { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+  .produto { display: grid; grid-template-columns: 1fr auto; column-gap: 12px; row-gap: 2px; align-items: center; }
+  .produto > b { font-size: 15px; }
+  .produto .direita { justify-self: end; text-align: right; font-variant-numeric: tabular-nums; }
+  .produto .valor { font-weight: 700; font-size: 15px; }
+  .produto .controle { justify-self: end; margin-top: 4px; }
+  .add { width: 30px; height: 30px; border-radius: 99px; border: 1px solid var(--border); display: grid; place-items: center; font-size: 17px; color: var(--primary); }
+  .mini { display: inline-flex; align-items: center; background: var(--muted); border-radius: 99px; height: 30px; }
+  .mini span { width: 28px; text-align: center; }
+  .mini b { min-width: 24px; text-align: center; font-variant-numeric: tabular-nums; }
+  .indisp { color: var(--mfg); }
+  .stepper { display: inline-flex; align-items: center; background: var(--muted); border-radius: 99px; }
+  .stepper span { width: 32px; text-align: center; padding: 5px 0; }
+  .stepper b { width: 30px; text-align: center; font-variant-numeric: tabular-nums; }
+  .stepper b.erro { color: var(--erro); }
+  .desc { display: inline-flex; align-items: center; gap: 6px; color: var(--mfg); font-size: 13px; }
+  .desc span.campo { border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; width: 46px; text-align: right; color: var(--fg); }
+  .desc span.campo.aviso { border-color: var(--aviso); }
+  .controles { display: flex; align-items: center; gap: 14px; margin-top: 10px; }
+  .controles .ghost { margin-left: auto; color: var(--mfg); font-size: 13px; }
+  .resumo { position: absolute; inset: auto 0 0 0; background: var(--card); border-top: 1px solid var(--border); padding: 12px 20px 20px; display: grid; gap: 8px; }
+  .total { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .btn { border-radius: 10px; padding: 10px 16px; font-size: 14px; font-weight: 600; background: var(--primary); color: var(--pfg); white-space: nowrap; }
+  .btn.off { opacity: .4; }
+  .estados { display: grid; gap: 14px; }
+  .estado { position: relative; height: 104px; border: 1px solid var(--border); border-radius: 14px; overflow: hidden; background: var(--bg); }
+  .estado .resumo { padding: 12px 16px 14px; }
+  .estado.cab-estado { height: auto; padding: 14px 16px; }
+  .tag { display: inline-block; font-size: 11px; color: var(--mfg); border: 1px solid var(--border); border-radius: 99px; padding: 1px 8px; margin-bottom: 6px; }
+  .barra-pedido { display:flex; align-items:center; gap:4px; color: var(--mfg); font-size:13px; }
+  .veu { position: absolute; inset: 0; background: #000a; }
+  .gaveta { position: absolute; inset: 70px 0 0 0; background: var(--bg); border-radius: 18px 18px 0 0; border-top: 1px solid var(--border); overflow: hidden; }
+  .alca { width: 40px; height: 4px; border-radius: 9px; background: var(--border); margin: 8px auto 4px; }
+  .gaveta-topo { display: flex; justify-content: space-between; align-items: center; padding: 6px 20px 12px; }
+  .gaveta-topo b { font-size: 16px; }
+  .valores { display: grid; grid-template-columns: 1fr auto; align-items: baseline; row-gap: 2px; font-variant-numeric: tabular-nums; }
+  .valores > :nth-child(even) { text-align: right; }
+  .minimo-bloco { display: grid; gap: 6px; }
+  .fina.minimo i { background: var(--mfg); }
+  .etiqueta { justify-self: start; font-size: 12px; color: var(--mfg); background: color-mix(in srgb, var(--muted) 70%, transparent); border-radius: 4px; padding: 1px 6px; cursor: default; user-select: none; }
+  .legenda { color: var(--mfg); font-size: 12.5px; margin: -2px 0 12px; }
+  .antes-cab h4 { font-size: 24px; font-weight: 700; }
+  .barrinha { display: flex; height: 7px; border-radius: 9px; overflow: hidden; background: var(--muted); }
+  .barrinha i { display: block; }
+  .badge { display: inline-block; background: var(--muted); border-radius: 6px; padding: 1px 7px; font-size: 12px; margin-right: 4px; }
+  .btn-antes { border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; font-size: 13px; }
+  .btn-antes.off { opacity: .45; }
+  .faixa-e { box-shadow: inset 0 3px 0 var(--erro); }
+  .progresso { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--muted); }
+  .progresso i { display: block; height: 100%; background: var(--mfg); }
+  .coluna { display: grid; gap: 14px; width: 360px; }
+  h1 { font-size: 26px; }
+  h2.secao { font-size: 20px; margin: 44px 0 4px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .desk { width: 1120px; height: 660px; background: var(--bg); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; display: grid; grid-template-rows: auto 1fr; }
+  .desk-topo { display: flex; justify-content: space-between; align-items: center; padding: 12px 32px; border-bottom: 1px solid var(--border); }
+  .desk-topo .acoes { display: flex; gap: 20px; align-items: center; color: var(--mfg); font-size: 13px; }
+  .logo { font-size: 20px; font-weight: 700; letter-spacing: -.01em; }
+  .logo span { color: var(--primary); }
+  .desk-corpo { display: grid; grid-template-columns: 1fr 420px; min-height: 0; }
+  .desk-esq { padding: 24px 32px; overflow: hidden; }
+  .desk-cab { display: grid; grid-template-columns: 1fr 380px; gap: 32px; align-items: end; padding-bottom: 20px; }
+  .desk-cab h4 { font-size: 28px; font-weight: 700; letter-spacing: -.01em; }
+  .desk-dir { background: var(--card); border-left: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
+  .desk-dir .cabecalho { display: flex; justify-content: space-between; align-items: baseline; padding: 20px 24px 12px; border-bottom: 1px solid var(--border); }
+  .desk-dir ul { flex: 1; border-top: 0; overflow: hidden; }
+  .desk-dir li { padding: 14px 24px; }
+  .desk-dir .resumo { position: relative; background: var(--bg); padding: 14px 24px 22px; }
+  .desk ul.resultados li { padding: 14px 4px; }
+  .linha-antes { display: grid; grid-template-columns: 1fr auto 112px; gap: 0 20px; align-items: center; }
+  .linha-depois { display: grid; grid-template-columns: 1fr auto 112px; gap: 0 20px; align-items: center; }
+  .linha-depois .info { display: grid; gap: 2px; }
+  .linha-depois .info .etiqueta { margin-top: 2px; }
+  .linha-depois .precos { text-align: right; font-variant-numeric: tabular-nums; }
+  .linha-depois .precos b { display: block; font-size: 15px; }
+  .linha-depois .ctl { justify-self: end; }
+  .btn-antes.largo { width: 112px; text-align: center; }
+
+  .nome-linha { display: flex; align-items: flex-start; gap: 12px; }
+  .nome-linha .nome { flex: 1; min-width: 0; }
+  .nome-linha h4 { overflow-wrap: break-word; }
+  .icone { flex-shrink: 0; width: 38px; height: 38px; border: 1px solid var(--border); border-radius: 10px; display: grid; place-items: center; color: var(--fg); }
+  .icone svg { width: 18px; height: 18px; }
+  .icone.desk-icone { width: auto; padding: 0 12px; gap: 8px; display: inline-flex; align-items: center; font-size: 13px; }
+  .pedidos { border-top: 0; overflow: hidden; }
+  .pedidos > li { padding: 0; border-bottom: 1px solid var(--border); }
+  .ped-cab { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 20px; }
+  .ped-cab .seta { color: var(--mfg); width: 16px; text-align: center; }
+  .ped-itens { padding: 0 20px 14px; display: grid; gap: 8px; }
+  .ped-item { display: grid; grid-template-columns: 1fr auto; column-gap: 12px; font-size: 13px; }
+  .ped-item .q { color: var(--mfg); font-size: 12px; }
+  .ped-item.fora b, .ped-item.fora span { color: var(--mfg); }
+  .ped-rodape { display: flex; justify-content: space-between; align-items: center; padding-top: 6px; border-top: 1px dashed var(--border); margin-top: 2px; }
+  .btn-outline { border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .dialogo { position: absolute; left: 24px; right: 24px; top: 250px; background: #2a3238; border-radius: 14px; padding: 18px; display: grid; gap: 16px; box-shadow: 0 10px 30px #000a; z-index: 5; }
+  .dialogo .acoes { display: flex; justify-content: flex-end; gap: 10px; }
+  .dialogo .acoes span { border-radius: 8px; padding: 6px 14px; font-size: 13px; font-weight: 600; }
+  .dialogo .ok { background: var(--primary); color: var(--pfg); }
+  .dialogo .cancelar { border: 1px solid var(--border); }
+  .lateral { position: absolute; top: 0; right: 0; bottom: 0; width: 440px; background: var(--bg); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+  .lateral .gaveta-topo { padding: 20px 20px 12px; border-bottom: 1px solid var(--border); }
+  .desk { position: relative; }
+</style>
+</head>
+<body>
+
+<h1>Repetir pedido</h1>
+<p class="sub">Dados reais do seed: Mercadinho São José (C001), pedidos PH002 e PH001 com os preços atuais da TP01.</p>
+
+<h3>Mobile</h3>
+<div class="grade">
+  <section class="cenario">
+    <h4>Ícone ao lado do nome</h4>
+    <p class="legenda">O botão de histórico fica fixo à direita; o nome ocupa o resto.</p>
+    <div class="tel">
+      <div class="topo"><span>‹ Carteira</span><span>Sair</span></div>
+      <div class="cab">
+        <div class="nome-linha"><div class="nome"><h4>Mercadinho São José</h4></div><span class="icone" title="Últimos pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span></div>
+        <div class="credito">
+          <div class="linha"><span class="m">Crédito disponível</span><b style="font-variant-numeric:tabular-nums">R$ 3.800,00</b></div>
+          <div class="fina"><i style="width:0%"></i></div>
+        </div>
+      </div>
+      <div class="busca" style="border-top:1px solid var(--border)"><div class="input m">Buscar por nome ou EAN</div></div>
+      <div class="resumo">
+        <div class="progresso"><i style="width:0%"></i></div>
+        <p class="m s">Faltam R$ 300,00 para o mínimo</p>
+        <div class="linha"><div><div class="barra-pedido">Pedido · 0 itens ⌃</div><div class="total">R$ 0,00</div></div><span class="btn off">Enviar pedido</span></div>
+      </div>
+    </div>
+  </section>
+  <section class="cenario">
+    <h4>Nome longo</h4>
+    <p class="legenda">O nome quebra em linhas e o ícone continua no mesmo lugar.</p>
+    <div class="tel">
+      <div class="topo"><span>‹ Carteira</span><span>Sair</span></div>
+      <div class="cab">
+        <div class="nome-linha"><div class="nome"><h4>Supermercado Família Nossa Senhora Aparecida</h4><span class="badge-aviso">Tabela provisória</span></div><span class="icone" title="Últimos pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span></div>
+        <div class="credito">
+          <div class="linha"><span class="m">Crédito disponível</span><b style="font-variant-numeric:tabular-nums">R$ 3.800,00</b></div>
+          <div class="fina"><i style="width:0%"></i></div>
+        </div>
+      </div>
+      <div class="busca" style="border-top:1px solid var(--border)"><div class="input m">Buscar por nome ou EAN</div></div>
+      <div class="resumo">
+        <div class="progresso"><i style="width:0%"></i></div>
+        <p class="m s">Faltam R$ 300,00 para o mínimo</p>
+        <div class="linha"><div><div class="barra-pedido">Pedido · 0 itens ⌃</div><div class="total">R$ 0,00</div></div><span class="btn off">Enviar pedido</span></div>
+      </div>
+    </div>
+  </section>
+  <section class="cenario">
+    <h4>Histórico aberto</h4>
+    <p class="legenda">Sheet de baixo com os pedidos; o vendedor abre um para ver os itens com o preço de hoje.</p>
+    <div class="tel">
+      <div class="topo"><span>‹ Carteira</span><span>Sair</span></div>
+      <div class="cab">
+        <div class="nome-linha"><div class="nome"><h4>Mercadinho São José</h4></div><span class="icone" title="Últimos pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span></div>
+        <div class="credito">
+          <div class="linha"><span class="m">Crédito disponível</span><b style="font-variant-numeric:tabular-nums">R$ 3.800,00</b></div>
+          <div class="fina"><i style="width:0%"></i></div>
+        </div>
+      </div>
+      <div class="busca" style="border-top:1px solid var(--border)"><div class="input m">Buscar por nome ou EAN</div></div>
+      <div class="resumo">
+        <div class="progresso"><i style="width:0%"></i></div>
+        <p class="m s">Faltam R$ 300,00 para o mínimo</p>
+        <div class="linha"><div><div class="barra-pedido">Pedido · 0 itens ⌃</div><div class="total">R$ 0,00</div></div><span class="btn off">Enviar pedido</span></div>
+      </div>
+      <div class="veu"></div>
+      <div class="gaveta">
+        <div class="alca"></div>
+        <div class="gaveta-topo"><b>Últimos pedidos</b><span class="m">✕</span></div>
+        <ul class="pedidos">
+        <li><div class="ped-cab"><div><div class="s">02/10/2026 · Faturado</div><div class="m xs">3 itens</div></div><span class="seta">⌃</span></div><div class="ped-itens">
+            <div class="ped-item"><b>Feijão Carioca Tipo 1 1kg</b><span>R$ 112,35</span><span class="q">15 unidades a R$ 7,49/un</span><span></span></div>
+            <div class="ped-item"><b>Refrigerante Cola 2L</b><span>R$ 107,88</span><span class="q">2 fardos de 6 (12 un) a R$ 8,99/un</span><span></span></div>
+            <div class="ped-item"><b>Detergente Líquido 500ml</b><span>R$ 57,36</span><span class="q">1 caixa de 24 a R$ 2,39/un</span><span></span></div>
+            <div class="ped-rodape"><span class="m s">Hoje: <b style="color:var(--fg)">R$ 277,59</b></span><span class="btn-outline">Repetir</span></div>
+          </div></li>
+        <li><div class="ped-cab"><div><div class="s">15/09/2026 · Faturado</div><div class="m xs">4 itens · 1 indisponível</div></div><span class="seta">⌄</span></div></li>
+      </ul>
+      </div>
+    </div>
+  </section>
+  <section class="cenario">
+    <h4>Item indisponível</h4>
+    <p class="legenda">O produto inativo aparece no pedido antigo, mas marcado como fora.</p>
+    <div class="tel">
+      <div class="topo"><span>‹ Carteira</span><span>Sair</span></div>
+      <div class="cab">
+        <div class="nome-linha"><div class="nome"><h4>Mercadinho São José</h4></div><span class="icone" title="Últimos pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span></div>
+        <div class="credito">
+          <div class="linha"><span class="m">Crédito disponível</span><b style="font-variant-numeric:tabular-nums">R$ 3.800,00</b></div>
+          <div class="fina"><i style="width:0%"></i></div>
+        </div>
+      </div>
+      <div class="busca" style="border-top:1px solid var(--border)"><div class="input m">Buscar por nome ou EAN</div></div>
+      <div class="resumo">
+        <div class="progresso"><i style="width:0%"></i></div>
+        <p class="m s">Faltam R$ 300,00 para o mínimo</p>
+        <div class="linha"><div><div class="barra-pedido">Pedido · 0 itens ⌃</div><div class="total">R$ 0,00</div></div><span class="btn off">Enviar pedido</span></div>
+      </div>
+      <div class="veu"></div>
+      <div class="gaveta">
+        <div class="alca"></div>
+        <div class="gaveta-topo"><b>Últimos pedidos</b><span class="m">✕</span></div>
+        <ul class="pedidos">
+        <li><div class="ped-cab"><div><div class="s">02/10/2026 · Faturado</div><div class="m xs">3 itens</div></div><span class="seta">⌄</span></div></li>
+        <li><div class="ped-cab"><div><div class="s">15/09/2026 · Faturado</div><div class="m xs">4 itens · 1 indisponível</div></div><span class="seta">⌃</span></div><div class="ped-itens">
+            <div class="ped-item"><b>Arroz Branco Tipo 1 5kg</b><span>R$ 269,00</span><span class="q">10 unidades a R$ 26,90/un</span><span></span></div>
+            <div class="ped-item"><b>Macarrão Espaguete 500g</b><span>R$ 133,20</span><span class="q">2 fardos de 20 (40 un) a R$ 3,33/un</span><span></span></div>
+            <div class="ped-item"><b>Leite UHT Integral 1L</b><span>R$ 119,76</span><span class="q">2 caixas de 12 (24 un) a R$ 4,99/un</span><span></span></div>
+            <div class="ped-item fora"><b>Biscoito Recheado Chocolate 140g</b><span>—</span><span class="q">Produto inativo, não entra</span><span></span></div>
+            <div class="ped-rodape"><span class="m s">Hoje: <b style="color:var(--fg)">R$ 521,96</b></span><span class="btn-outline">Repetir</span></div>
+          </div></li>
+      </ul>
+      </div>
+    </div>
+  </section>
+  <section class="cenario">
+    <h4>Depois de repetir</h4>
+    <p class="legenda">O sheet fecha e o pedido fica montado; daí em diante valem as regras de sempre.</p>
+    <div class="tel">
+      <div class="topo"><span>‹ Carteira</span><span>Sair</span></div>
+      <div class="cab">
+        <div class="nome-linha"><div class="nome"><h4>Mercadinho São José</h4></div><span class="icone" title="Últimos pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span></div>
+        <div class="credito">
+          <div class="linha"><span class="m">Crédito disponível</span><b style="font-variant-numeric:tabular-nums">R$ 3.800,00</b></div>
+          <div class="fina"><i style="width:13.7%"></i></div>
+        </div>
+      </div>
+      <div class="busca" style="border-top:1px solid var(--border)"><div class="input m">Buscar por nome ou EAN</div></div>
+      <div class="resumo">
+        <div class="progresso"><i style="width:100%"></i></div>
+        
+        <div class="linha"><div><div class="barra-pedido">Pedido · 3 itens ⌃</div><div class="total">R$ 521,96</div></div><span class="btn">Enviar pedido</span></div>
+      </div>
+    </div>
+  </section>
+  <section class="cenario">
+    <h4>Repetir com itens no pedido</h4>
+    <p class="legenda">Se o pedido já tem itens, o navegador pede confirmação antes de substituir.</p>
+    <div class="tel">
+      <div class="topo"><span>‹ Carteira</span><span>Sair</span></div>
+      <div class="cab">
+        <div class="nome-linha"><div class="nome"><h4>Mercadinho São José</h4></div><span class="icone" title="Últimos pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span></div>
+        <div class="credito">
+          <div class="linha"><span class="m">Crédito disponível</span><b style="font-variant-numeric:tabular-nums">R$ 3.800,00</b></div>
+          <div class="fina"><i style="width:13.7%"></i></div>
+        </div>
+      </div>
+      <div class="busca" style="border-top:1px solid var(--border)"><div class="input m">Buscar por nome ou EAN</div></div>
+      <div class="resumo">
+        <div class="progresso"><i style="width:100%"></i></div>
+        
+        <div class="linha"><div><div class="barra-pedido">Pedido · 3 itens ⌃</div><div class="total">R$ 521,96</div></div><span class="btn">Enviar pedido</span></div>
+      </div>
+      <div class="veu"></div>
+      <div class="gaveta">
+        <div class="alca"></div>
+        <div class="gaveta-topo"><b>Últimos pedidos</b><span class="m">✕</span></div>
+        <ul class="pedidos">
+        <li><div class="ped-cab"><div><div class="s">02/10/2026 · Faturado</div><div class="m xs">3 itens</div></div><span class="seta">⌃</span></div><div class="ped-itens">
+            <div class="ped-item"><b>Feijão Carioca Tipo 1 1kg</b><span>R$ 112,35</span><span class="q">15 unidades a R$ 7,49/un</span><span></span></div>
+            <div class="ped-item"><b>Refrigerante Cola 2L</b><span>R$ 107,88</span><span class="q">2 fardos de 6 (12 un) a R$ 8,99/un</span><span></span></div>
+            <div class="ped-item"><b>Detergente Líquido 500ml</b><span>R$ 57,36</span><span class="q">1 caixa de 24 a R$ 2,39/un</span><span></span></div>
+            <div class="ped-rodape"><span class="m s">Hoje: <b style="color:var(--fg)">R$ 277,59</b></span><span class="btn-outline">Repetir</span></div>
+          </div></li>
+        <li><div class="ped-cab"><div><div class="s">15/09/2026 · Faturado</div><div class="m xs">4 itens · 1 indisponível</div></div><span class="seta">⌄</span></div></li>
+      </ul>
+      </div>
+      <div class="dialogo">
+        <p>Substituir os itens do pedido atual?</p>
+        <div class="acoes"><span class="cancelar">Cancelar</span><span class="ok">OK</span></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<h3>Desktop: histórico aberto na lateral</h3>
+<div class="desk">
+  <div class="desk-topo"><span class="logo">Smart<span>Pedido</span></span><div class="acoes"><span>‹ Carteira</span><span>Carlos Menezes</span><span>Sair</span></div></div>
+  <div class="desk-corpo">
+    <section class="desk-esq">
+      <div class="desk-cab">
+        <div class="nome-linha"><div class="nome"><h4>Mercadinho São José</h4></div><span class="icone" title="Últimos pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg></span></div>
+        <div class="credito">
+          <div class="linha"><span class="m">Crédito disponível</span><b style="font-variant-numeric:tabular-nums">R$ 3.800,00</b></div>
+          <div class="fina"><i style="width:0%"></i></div>
+        </div>
+      </div>
+      <div class="input m">Buscar por nome ou EAN</div>
+    </section>
+    <aside class="desk-dir">
+      <div class="cabecalho"><b>Pedido · 0 itens</b></div>
+      <ul></ul>
+      <div class="resumo">
+        <div class="valores"><b>Total</b><span class="total">R$ 0,00</span></div>
+        <span class="btn off" style="text-align:center">Enviar pedido</span>
+      </div>
+    </aside>
+  </div>
+  <div class="veu"></div>
+  <div class="lateral">
+    <div class="gaveta-topo"><b>Últimos pedidos</b><span class="m">✕</span></div>
+    <ul class="pedidos">
+        <li><div class="ped-cab"><div><div class="s">02/10/2026 · Faturado</div><div class="m xs">3 itens</div></div><span class="seta">⌄</span></div></li>
+        <li><div class="ped-cab"><div><div class="s">15/09/2026 · Faturado</div><div class="m xs">4 itens · 1 indisponível</div></div><span class="seta">⌃</span></div><div class="ped-itens">
+            <div class="ped-item"><b>Arroz Branco Tipo 1 5kg</b><span>R$ 269,00</span><span class="q">10 unidades a R$ 26,90/un</span><span></span></div>
+            <div class="ped-item"><b>Macarrão Espaguete 500g</b><span>R$ 133,20</span><span class="q">2 fardos de 20 (40 un) a R$ 3,33/un</span><span></span></div>
+            <div class="ped-item"><b>Leite UHT Integral 1L</b><span>R$ 119,76</span><span class="q">2 caixas de 12 (24 un) a R$ 4,99/un</span><span></span></div>
+            <div class="ped-item fora"><b>Biscoito Recheado Chocolate 140g</b><span>—</span><span class="q">Produto inativo, não entra</span><span></span></div>
+            <div class="ped-rodape"><span class="m s">Hoje: <b style="color:var(--fg)">R$ 521,96</b></span><span class="btn-outline">Repetir</span></div>
+          </div></li>
+      </ul>
+  </div>
+</div>
+
+</body>
+</html>

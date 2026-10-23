@@ -1,10 +1,11 @@
-import type { ProdutoDisponivel } from "contracts/schemas";
+import type { PedidoHistorico, ProdutoDisponivel } from "contracts/schemas";
 import { describe, expect, it } from "vitest";
 import type { ItemPedido } from "@/stores/pedido";
 import {
   incrementarEmbalagens,
   itemEmUnidades,
   itemValido,
+  itensParaRepetir,
   validarEmbalagens,
 } from "./item-pedido";
 
@@ -73,5 +74,37 @@ describe("incrementarEmbalagens", () => {
   it("vai para o mínimo quando a quantidade é inválida", () => {
     expect(incrementarEmbalagens(item(acucar, 1))).toBe(2);
     expect(incrementarEmbalagens(item(acucar, Number.NaN))).toBe(2);
+  });
+});
+
+describe("itensParaRepetir", () => {
+  function historico(itens: PedidoHistorico["itens"]): PedidoHistorico {
+    return {
+      id: "PH001",
+      cliente_id: "C001",
+      vendedor_id: "V01",
+      data: "2026-09-15",
+      status: "faturado",
+      itens,
+    };
+  }
+
+  const fardoDeAcucar = item(acucar, 1).produto;
+
+  it("converte as unidades do histórico em embalagens", () => {
+    expect(itensParaRepetir(historico([{ quantidade: 30, produto: fardoDeAcucar }]))).toMatchObject(
+      [{ embalagens: 3 }],
+    );
+  });
+
+  it("deixa de fora o produto indisponível hoje", () => {
+    const inativo = { ...fardoDeAcucar, disponivel: false, motivo: "produto_inativo" } as const;
+    expect(itensParaRepetir(historico([{ quantidade: 30, produto: inativo }]))).toEqual([]);
+  });
+
+  it("não copia o desconto do pedido antigo", () => {
+    expect(itensParaRepetir(historico([{ quantidade: 30, produto: fardoDeAcucar }]))).toMatchObject(
+      [{ desconto_percentual: 0 }],
+    );
   });
 });
