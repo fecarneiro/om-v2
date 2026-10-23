@@ -1,2 +1,0 @@
-- Tipos do drizzle em pedidos.rules.ts (rever)
-- README.md

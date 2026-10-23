@@ -2,6 +2,8 @@
   "private": true,
   "packageManager": "pnpm@12.11.2",
   "scripts": {
+    "test": "pnpm -r test",
+    "test:int": "pnpm --filter api test:int",
     "check": "biome check .",
     "check:fix": "biome check --write ."
   },
