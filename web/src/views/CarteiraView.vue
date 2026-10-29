@@ -1,16 +1,19 @@
 <script setup lang="ts">
 import { PEDIDO_MINIMO } from "contracts/constants";
 import { type ClienteCarteira, clienteCarteiraSchema } from "contracts/schemas";
-import { onMounted, ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import { get } from "@/api/client";
 import CabecalhoApp from "@/components/app/CabecalhoApp.vue";
 import AvisosCliente from "@/components/carteira/AvisosCliente.vue";
 import { lerComFallbackOffline } from "@/offline/api/leitura-offline";
 import { lerCarteiraOffline } from "@/offline/banco/armazenamento-offline";
+import PedidosPendentes from "@/offline/components/PedidosPendentes.vue";
+import { useSincronizacaoOfflineStore } from "@/offline/stores/sincronizacao";
 import { useSessaoStore } from "@/stores/sessao";
 import { formatarMoeda } from "@/utils/moeda";
 
 const sessao = useSessaoStore();
+const sincronizacao = useSincronizacaoOfflineStore();
 
 const clientes = ref<ClienteCarteira[]>([]);
 const carregando = ref(true);
@@ -33,6 +36,7 @@ async function carregar() {
 }
 
 onMounted(carregar);
+watch(() => sincronizacao.ultimaSincronizacao, carregar);
 </script>
 
 <template>
@@ -57,6 +61,7 @@ onMounted(carregar);
       Nenhum cliente na carteira.
     </p>
     <template v-else>
+      <PedidosPendentes />
       <div class="text-muted-foreground flex justify-between px-5 pb-2 text-[13px]">
         <span>Cliente</span>
         <span>Crédito disponível</span>

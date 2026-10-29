@@ -5,12 +5,13 @@ import { totalLiquidoDoPedido } from "contracts/rules";
 import {
   type ClienteCarteira,
   clienteCarteiraSchema,
+  type NovoPedido,
   type PedidoEnviado,
   type PedidoHistorico,
   pedidoEnviadoSchema,
   pedidoHistoricoSchema,
 } from "contracts/schemas";
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import { get, post } from "@/api/client";
 import { ApiError } from "@/api/errors";
@@ -33,8 +34,11 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { lerComFallbackOffline } from "@/offline/api/leitura-offline";
+import { detectouFalhaDeRedeOffline, lerComFallbackOffline } from "@/offline/api/leitura-offline";
 import { lerClienteOffline } from "@/offline/banco/armazenamento-offline";
+import ResultadoFilaEnvio from "@/offline/components/ResultadoFilaEnvio.vue";
+import { useFilaEnvioOfflineStore } from "@/offline/stores/fila-envio";
+import { useSincronizacaoOfflineStore } from "@/offline/stores/sincronizacao";
 import { itemEmUnidades, itemParaApi, itemValido } from "@/regras/item-pedido";
 import { usePedidoStore } from "@/stores/pedido";
 import { useSessaoStore } from "@/stores/sessao";
@@ -42,6 +46,8 @@ import { mensagemDoErro } from "@/utils/mensagens-erro";
 
 const sessao = useSessaoStore();
 const pedido = usePedidoStore();
+const filaEnvio = useFilaEnvioOfflineStore();
+const sincronizacao = useSincronizacaoOfflineStore();
 const route = useRoute();
 const clienteId = String(route.params.clienteId);
 
@@ -50,6 +56,7 @@ const carregando = ref(true);
 const erro = ref<"nao_encontrado" | "falha" | null>(null);
 
 const pedidoGravado = ref<PedidoEnviado | null>(null);
+const totalNaFilaEnvio = ref<string | null>(null);
 const enviando = ref(false);
 const erroEnvio = ref<string | null>(null);
 const pedidoAberto = ref(false);
@@ -100,6 +107,14 @@ onMounted(() => {
   carregarHistorico();
 });
 
+watch(
+  () => sincronizacao.ultimaSincronizacao,
+  () => {
+    carregarCliente();
+    carregarHistorico();
+  },
+);
+
 function repetir(historico: PedidoHistorico) {
   pedidoParaRepetir.value = historico;
   if (itens.value.length) confirmandoRepeticao.value = true;
@@ -121,27 +136,52 @@ function mensagemErroEnvio(e: unknown) {
   return item ? `${mensagem} (${item.produto.descricao})` : mensagem;
 }
 
+async function guardarNaFilaEnvioOffline(novoPedido: NovoPedido, chaveIdempotencia: string) {
+  if (!sessao.vendedor || !cliente.value) return;
+
+  if (filaEnvio.temPendente(clienteId)) {
+    erroEnvio.value = "Já existe um pedido aguardando envio para este cliente.";
+    return;
+  }
+
+  const totalDoPedido = total.value.toFixed(2);
+  await filaEnvio.enfileirar(sessao.vendedor.id, {
+    chave_idempotencia: chaveIdempotencia,
+    cliente_id: clienteId,
+    cliente_nome: cliente.value.nome_fantasia,
+    pedido: novoPedido,
+    total: totalDoPedido,
+    criado_em: new Date().toISOString(),
+  });
+  pedido.esvaziar(clienteId);
+  pedidoAberto.value = false;
+  totalNaFilaEnvio.value = totalDoPedido;
+}
+
 async function enviar() {
   if (!sessao.vendedor) return;
+
+  const novoPedido: NovoPedido = {
+    vendedor_id: sessao.vendedor.id,
+    cliente_id: clienteId,
+    itens: itens.value.map(itemParaApi),
+  };
+  const chaveIdempotencia = crypto.randomUUID();
 
   enviando.value = true;
   erroEnvio.value = null;
   try {
-    pedidoGravado.value = await post(
-      "/pedidos",
-      {
-        vendedor_id: sessao.vendedor.id,
-        cliente_id: clienteId,
-        itens: itens.value.map(itemParaApi),
-      },
-      pedidoEnviadoSchema,
-      { headers: { "Idempotency-Key": crypto.randomUUID() } },
-    );
+    if (!navigator.onLine) return await guardarNaFilaEnvioOffline(novoPedido, chaveIdempotencia);
+
+    pedidoGravado.value = await post("/pedidos", novoPedido, pedidoEnviadoSchema, {
+      headers: { "Idempotency-Key": chaveIdempotencia },
+    });
     pedido.esvaziar(clienteId);
     pedidoAberto.value = false;
     await Promise.all([carregarCliente(), carregarHistorico()]);
   } catch (e) {
-    erroEnvio.value = mensagemErroEnvio(e);
+    if (detectouFalhaDeRedeOffline(e)) await guardarNaFilaEnvioOffline(novoPedido, chaveIdempotencia);
+    else erroEnvio.value = mensagemErroEnvio(e);
   } finally {
     enviando.value = false;
   }
@@ -163,7 +203,7 @@ async function enviar() {
     </p>
 
     <div
-      v-else-if="cliente && !pedidoGravado"
+      v-else-if="cliente && !pedidoGravado && !totalNaFilaEnvio"
       class="lg:grid lg:min-h-0 lg:grid-cols-[1fr_420px]"
     >
       <section class="lg:overflow-y-auto lg:px-8">
@@ -293,5 +333,10 @@ async function enviar() {
       @novo="pedidoGravado = null"
     />
 
+    <ResultadoFilaEnvio
+      v-else-if="cliente && totalNaFilaEnvio"
+      :cliente="cliente"
+      :total="totalNaFilaEnvio"
+    />
   </div>
 </template>
