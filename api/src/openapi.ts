@@ -86,6 +86,18 @@ export const openapi = {
         },
       },
     },
+    "/clientes/{clienteId}/catalogo": {
+      get: {
+        summary: "Catálogo completo com o preço da tabela do cliente (cache offline)",
+        parameters: [parametroDeCaminho("clienteId", "C001")],
+        responses: {
+          200: resposta(
+            "Todos os produtos, com disponibilidade e preço ou motivo",
+            produtoBuscaSchema.array(),
+          ),
+        },
+      },
+    },
     "/clientes/{clienteId}/pedidos": {
       get: {
         summary: "Últimos pedidos do cliente, com disponibilidade e preço atuais",

@@ -1,22 +1,18 @@
+import { LIMITE_BUSCA_PRODUTOS } from "contracts/constants";
 import { disponibilidadeDoProduto, tabelaDoCliente } from "contracts/rules";
 import type { ProdutoBusca } from "contracts/schemas";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, type SQL, sql } from "drizzle-orm";
 import type { Db } from "../db/client.js";
 import { clientes, produtos, tabelas_preco_itens } from "../db/schema.js";
 
 const textoBuscavel = sql`unaccent(${produtos.descricao} || ' ' || coalesce(${produtos.marca}, '') || ' ' || ${produtos.sku})`;
 
-// TODO: ponderar índice pg_trgm ou tsvector se o catálogo crescer
+// Espelhado em web/src/offline/busca-offline.ts
 export async function buscarProdutos(
   db: Db,
   clienteId: string,
   busca: string,
 ): Promise<ProdutoBusca[]> {
-  const [cliente] = await db.select().from(clientes).where(eq(clientes.id, clienteId));
-  if (!cliente) return [];
-
-  const { tabela_preco_id } = tabelaDoCliente(cliente);
-
   // Só dígitos: começo do EAN. Texto: todas as palavras (AND), sem acento.
   // Valores vão como parâmetros (sem SQL injection); % e _ escapados do LIKE.
   const filtro = /^\d+$/.test(busca)
@@ -29,7 +25,25 @@ export async function buscarProdutos(
           .map((termo) => sql`${textoBuscavel} ILIKE unaccent(${`%${termo}%`})`),
       );
 
-  const linhas = await db
+  return produtosComPrecoDoCliente(db, clienteId, filtro, LIMITE_BUSCA_PRODUTOS);
+}
+
+export async function listarCatalogo(db: Db, clienteId: string): Promise<ProdutoBusca[]> {
+  return produtosComPrecoDoCliente(db, clienteId);
+}
+
+async function produtosComPrecoDoCliente(
+  db: Db,
+  clienteId: string,
+  filtro?: SQL,
+  limite?: number,
+): Promise<ProdutoBusca[]> {
+  const [cliente] = await db.select().from(clientes).where(eq(clientes.id, clienteId));
+  if (!cliente) return [];
+
+  const { tabela_preco_id } = tabelaDoCliente(cliente);
+
+  const consulta = db
     .select({ produto: produtos, preco_unidade: tabelas_preco_itens.preco_unidade })
     .from(produtos)
     .leftJoin(
@@ -41,7 +55,9 @@ export async function buscarProdutos(
     )
     .where(filtro)
     .orderBy(produtos.descricao)
-    .limit(20);
+    .$dynamic();
+
+  const linhas = await (limite ? consulta.limit(limite) : consulta);
 
   return linhas.map(({ produto, preco_unidade }) => ({
     ...produto,

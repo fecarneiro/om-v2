@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { db } from "../db/client.js";
 import { seed } from "../db/seed.js";
-import { buscarProdutos } from "./produtos.service.js";
+import { buscarProdutos, listarCatalogo } from "./produtos.service.js";
 
 beforeAll(async () => {
   await seed(db);
@@ -52,5 +52,26 @@ describe("buscarProdutos", () => {
   it("trata % e _ como texto, não como curingas do ILIKE", async () => {
     expect(await buscarProdutos(db, "C001", "%")).toEqual([]);
     expect(await buscarProdutos(db, "C001", "_")).toEqual([]);
+  });
+});
+
+describe("listarCatalogo", () => {
+  it("lista todos os produtos, sem o limite da busca", async () => {
+    const catalogo = await listarCatalogo(db, "C001");
+
+    expect(catalogo).toHaveLength(23);
+  });
+
+  it("usa o preço da tabela do cliente", async () => {
+    const catalogo = await listarCatalogo(db, "C002");
+
+    expect(catalogo.find((produto) => produto.id === "P001")).toMatchObject({
+      disponivel: true,
+      preco_unidade: "25.29",
+    });
+  });
+
+  it("retorna vazio para cliente inexistente", async () => {
+    expect(await listarCatalogo(db, "X999")).toEqual([]);
   });
 });
