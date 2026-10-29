@@ -5,6 +5,8 @@ import { onMounted, ref } from "vue";
 import { get } from "@/api/client";
 import CabecalhoApp from "@/components/app/CabecalhoApp.vue";
 import AvisosCliente from "@/components/carteira/AvisosCliente.vue";
+import { lerComFallbackOffline } from "@/offline/api/leitura-offline";
+import { lerCarteiraOffline } from "@/offline/banco/armazenamento-offline";
 import { useSessaoStore } from "@/stores/sessao";
 import { formatarMoeda } from "@/utils/moeda";
 
@@ -14,19 +16,23 @@ const clientes = ref<ClienteCarteira[]>([]);
 const carregando = ref(true);
 const erro = ref(false);
 
-onMounted(async () => {
+async function carregar() {
   if (!sessao.vendedor) return;
+  const vendedorId = sessao.vendedor.id;
   try {
-    clientes.value = await get(
-      `/vendedores/${sessao.vendedor.id}/clientes`,
-      clienteCarteiraSchema.array(),
+    clientes.value = await lerComFallbackOffline(
+      () => get(`/vendedores/${vendedorId}/clientes`, clienteCarteiraSchema.array()),
+      () => lerCarteiraOffline(vendedorId),
     );
+    erro.value = false;
   } catch {
     erro.value = true;
   } finally {
     carregando.value = false;
   }
-});
+}
+
+onMounted(carregar);
 </script>
 
 <template>

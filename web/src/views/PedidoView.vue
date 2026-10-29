@@ -33,6 +33,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { lerComFallbackOffline } from "@/offline/api/leitura-offline";
+import { lerClienteOffline } from "@/offline/banco/armazenamento-offline";
 import { itemEmUnidades, itemParaApi, itemValido } from "@/regras/item-pedido";
 import { usePedidoStore } from "@/stores/pedido";
 import { useSessaoStore } from "@/stores/sessao";
@@ -67,10 +69,11 @@ const total = computed(() => totalLiquidoDoPedido(itens.value.filter(itemValido)
 
 async function carregarCliente() {
   if (!sessao.vendedor) return;
+  const vendedorId = sessao.vendedor.id;
   try {
-    cliente.value = await get(
-      `/vendedores/${sessao.vendedor.id}/clientes/${clienteId}`,
-      clienteCarteiraSchema,
+    cliente.value = await lerComFallbackOffline(
+      () => get(`/vendedores/${vendedorId}/clientes/${clienteId}`, clienteCarteiraSchema),
+      () => lerClienteOffline(vendedorId, clienteId),
     );
   } catch (e) {
     if (cliente.value) return;
@@ -289,5 +292,6 @@ async function enviar() {
       :total="total"
       @novo="pedidoGravado = null"
     />
+
   </div>
 </template>

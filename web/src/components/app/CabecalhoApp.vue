@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import { ChevronLeft } from "@lucide/vue";
+import { useOnline } from "@vueuse/core";
 import { useRouter } from "vue-router";
 import LogoApp from "@/components/app/LogoApp.vue";
 import { Button } from "@/components/ui/button";
+import AvisoOffline from "@/offline/components/AvisoOffline.vue";
 import { useSessaoStore } from "@/stores/sessao";
 
 defineProps<{ voltar?: string }>();
 
 const sessao = useSessaoStore();
 const router = useRouter();
+const online = useOnline();
 
 function sair() {
   sessao.sair();
@@ -35,6 +38,7 @@ function sair() {
     </span>
 
     <div class="flex items-center gap-2">
+      <AvisoOffline class="mr-2" />
       <RouterLink
         v-if="voltar"
         :to="voltar"
@@ -46,7 +50,16 @@ function sair() {
       <span class="text-muted-foreground hidden text-sm lg:inline">
         {{ voltar ? sessao.vendedor?.nome : `Olá, ${sessao.vendedor?.nome}` }}
       </span>
-      <Button variant="ghost" size="sm" class="-mr-3.5" @click="sair">Sair</Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        class="-mr-3.5"
+        :disabled="!online"
+        :title="online ? undefined : 'Sem conexão: não é possível sair agora'"
+        @click="sair"
+      >
+        Sair
+      </Button>
     </div>
   </header>
 </template>

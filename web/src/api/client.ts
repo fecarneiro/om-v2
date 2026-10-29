@@ -1,5 +1,14 @@
 import type { z } from "zod";
-import { ApiError } from "./errors";
+import { ApiError, FalhaDeRedeError } from "./errors";
+
+async function requisitar(url: string, init?: RequestInit) {
+  try {
+    return await fetch(url, init);
+  } catch (erro) {
+    if (erro instanceof DOMException && erro.name === "AbortError") throw erro;
+    throw new FalhaDeRedeError(erro);
+  }
+}
 
 async function lerResposta<S extends z.ZodType>(
   resposta: Response,
@@ -18,7 +27,7 @@ export async function get<S extends z.ZodType>(
   schema: S,
   opcoes: { signal?: AbortSignal } = {},
 ) {
-  return lerResposta(await fetch(`/api${caminho}`, { signal: opcoes.signal }), schema);
+  return lerResposta(await requisitar(`/api${caminho}`, { signal: opcoes.signal }), schema);
 }
 
 export async function post<S extends z.ZodType>(
@@ -27,7 +36,7 @@ export async function post<S extends z.ZodType>(
   schema: S,
   opcoes: { headers?: Record<string, string> } = {},
 ) {
-  const resposta = await fetch(`/api${caminho}`, {
+  const resposta = await requisitar(`/api${caminho}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...opcoes.headers },
     body: JSON.stringify(corpo),

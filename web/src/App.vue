@@ -1,4 +1,8 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { useGatilhosSincronizacaoOffline } from "@/offline/sincronizacao/gatilhos-offline";
+
+useGatilhosSincronizacaoOffline();
+</script>
 
 <template>
   <RouterView />

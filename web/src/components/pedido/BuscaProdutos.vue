@@ -7,6 +7,9 @@ import { get } from "@/api/client";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { lerComFallbackOffline } from "@/offline/api/leitura-offline";
+import { lerCatalogoOffline } from "@/offline/banco/armazenamento-offline";
+import { filtrarProdutosOffline } from "@/offline/regras/busca-offline";
 import { incrementarEmbalagens, validarEmbalagens } from "@/regras/item-pedido";
 import type { ItemPedido } from "@/stores/pedido";
 import { descricaoDaEmbalagem, precoDaEmbalagem } from "@/utils/exibicao-produto";
@@ -59,11 +62,20 @@ async function buscar(termo: string) {
   const atual = new AbortController();
   controller = atual;
   try {
-    resultados.value = await get(
-      `/clientes/${props.clienteId}/produtos?busca=${encodeURIComponent(termo)}`,
-      produtoBuscaSchema.array(),
-      { signal: atual.signal },
+    const encontrados = await lerComFallbackOffline(
+      () =>
+        get(
+          `/clientes/${props.clienteId}/produtos?busca=${encodeURIComponent(termo)}`,
+          produtoBuscaSchema.array(),
+          { signal: atual.signal },
+        ),
+      async () => {
+        const catalogo = await lerCatalogoOffline(props.clienteId);
+        return catalogo && { ...catalogo, dados: filtrarProdutosOffline(catalogo.dados, termo) };
+      },
     );
+    if (atual.signal.aborted) return;
+    resultados.value = encontrados;
   } catch {
     if (!atual.signal.aborted) erro.value = true;
   } finally {

@@ -10,3 +10,9 @@ export class ApiError extends Error {
     this.produtoId = produtoId;
   }
 }
+
+export class FalhaDeRedeError extends Error {
+  constructor(causa: unknown) {
+    super("falha_de_rede", { cause: causa });
+  }
+}
