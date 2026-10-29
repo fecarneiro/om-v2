@@ -53,6 +53,7 @@ export const usePedidoStore = defineStore("pedido", () => {
 
   return {
     itens,
+    itensPorCliente,
     adicionar,
     alterarEmbalagens,
     alterarDesconto,
