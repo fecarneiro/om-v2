@@ -1,7 +1,9 @@
+import { useLocalStorage } from "@vueuse/core";
 import { embalagensMinimas } from "contracts/rules";
 import type { PedidoHistorico, ProdutoDisponivel } from "contracts/schemas";
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import ItensPedido from "@/components/pedido/ItensPedido.vue";
 import { itensParaRepetir } from "@/regras/item-pedido";
 
 export type ItemPedido = {
@@ -11,7 +13,7 @@ export type ItemPedido = {
 };
 
 export const usePedidoStore = defineStore("pedido", () => {
-  const itensPorCliente = ref<Record<string, ItemPedido[]>>({});
+  const itensPorCliente = useLocalStorage<Record<string, ItemPedido[]>>("pedido.rascunhos", {});
 
   function itens(clienteId: string) {
     return itensPorCliente.value[clienteId] ?? [];
