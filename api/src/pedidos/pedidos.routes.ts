@@ -5,13 +5,15 @@ import { db } from "../db/client.js";
 import { enviarPedido, listarUltimosPedidosPrecoAtual } from "./pedidos.service.js";
 
 const historicoSchema = z.object({ vendedor_id: z.string().min(1) });
+const headersEnvioSchema = z.object({ "idempotency-key": z.string().min(1).max(255) });
 
 export const pedidosRoutes = Router();
 
 pedidosRoutes.post("/pedidos", async (req, res) => {
   const input = novoPedidoSchema.parse(req.body);
-  const pedido = await enviarPedido(db, input);
-  res.status(201).json(pedido);
+  const { "idempotency-key": chaveIdempotencia } = headersEnvioSchema.parse(req.headers);
+  const { pedido, criado } = await enviarPedido(db, input, chaveIdempotencia);
+  res.status(criado ? 201 : 200).json(pedido);
 });
 
 pedidosRoutes.get("/clientes/:clienteId/pedidos", async (req, res) => {

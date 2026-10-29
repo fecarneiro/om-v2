@@ -132,6 +132,7 @@ async function enviar() {
         itens: itens.value.map(itemParaApi),
       },
       pedidoEnviadoSchema,
+      { headers: { "Idempotency-Key": crypto.randomUUID() } },
     );
     pedido.esvaziar(clienteId);
     pedidoAberto.value = false;

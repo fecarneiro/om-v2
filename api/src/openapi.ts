@@ -125,6 +125,17 @@ export const openapi = {
     "/pedidos": {
       post: {
         summary: "Envia um pedido",
+        parameters: [
+          {
+            name: "Idempotency-Key",
+            in: "header",
+            required: true,
+            description:
+              "Gerada pelo cliente por tentativa de envio; reenvios com a mesma chave devolvem o pedido já gravado",
+            schema: { type: "string" },
+            example: "0b9f6a52-3c1e-4d8a-9a3e-2f6c1d7e8b90",
+          },
+        ],
         requestBody: {
           required: true,
           content: {
@@ -140,7 +151,12 @@ export const openapi = {
         },
         responses: {
           201: resposta("Pedido gravado, com status e total", pedidoEnviadoSchema),
-          400: respostaDeErro("JSON ou input inválido"),
+          200: resposta(
+            "Pedido com esta chave já existia: devolvido sem gravar nem debitar crédito de novo",
+            pedidoEnviadoSchema,
+          ),
+          400: respostaDeErro("JSON, input ou Idempotency-Key inválidos"),
+          409: respostaDeErro("Chave já usada pelo vendedor em pedido de outro cliente"),
           422: respostaDeErro("Regra de negócio violada (produto_id quando o erro é de um item)"),
         },
       },

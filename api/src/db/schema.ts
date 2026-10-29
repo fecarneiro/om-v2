@@ -12,6 +12,7 @@ import {
   pgTable,
   primaryKey,
   text,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 // Helpers
@@ -123,8 +124,15 @@ export const pedidos = pgTable(
       .references(() => vendedores.id),
     data: date().notNull(),
     status: statusPedidoEnum().notNull(),
+    chave_idempotencia: text(),
   },
-  (t) => [index("pedidos_cliente_id_data_idx").on(t.cliente_id, t.data)],
+  (t) => [
+    index("pedidos_cliente_id_data_idx").on(t.cliente_id, t.data),
+    uniqueIndex("pedidos_vendedor_id_chave_idempotencia_idx").on(
+      t.vendedor_id,
+      t.chave_idempotencia,
+    ),
+  ],
 );
 
 export const pedidos_itens = pgTable(

@@ -6,3 +6,9 @@ export class PedidoInvalidoError extends Error {
     super(codigo);
   }
 }
+
+export class ChaveIdempotenciaEmUsoError extends Error {
+  constructor() {
+    super("chave_idempotencia_em_uso");
+  }
+}

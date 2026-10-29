@@ -8,7 +8,8 @@ type ErroDoEnvio =
   | "produto_sem_preco"
   | "quantidade_invalida"
   | "fora_do_multiplo"
-  | "abaixo_do_minimo_de_embalagens";
+  | "abaixo_do_minimo_de_embalagens"
+  | "chave_idempotencia_em_uso";
 
 export const MENSAGENS: Record<BloqueioDoPedido | ErroDoEnvio, string> = {
   item_invalido: "Corrija os itens com erro.",
@@ -23,6 +24,7 @@ export const MENSAGENS: Record<BloqueioDoPedido | ErroDoEnvio, string> = {
   quantidade_invalida: "Quantidade inválida.",
   fora_do_multiplo: "Quantidade fora do múltiplo da embalagem.",
   abaixo_do_minimo_de_embalagens: "Quantidade abaixo do mínimo de embalagens.",
+  chave_idempotencia_em_uso: "Conflito ao identificar o envio. Tente de novo.",
 };
 
 export function mensagemDoErro(codigo: string) {

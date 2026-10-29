@@ -1,0 +1,2 @@
+ALTER TABLE "pedidos" ADD COLUMN "chave_idempotencia" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "pedidos_vendedor_id_chave_idempotencia_idx" ON "pedidos" USING btree ("vendedor_id","chave_idempotencia");

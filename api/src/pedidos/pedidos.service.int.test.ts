@@ -1,9 +1,10 @@
+import { randomUUID } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "../db/client.js";
 import { clientes, pedidos } from "../db/schema.js";
 import { seed } from "../db/seed.js";
-import { PedidoInvalidoError } from "./pedidos.errors.js";
+import { ChaveIdempotenciaEmUsoError, PedidoInvalidoError } from "./pedidos.errors.js";
 import { enviarPedido, listarUltimosPedidosPrecoAtual } from "./pedidos.service.js";
 
 async function creditoUtilizado(clienteId: string) {
@@ -21,14 +22,18 @@ afterAll(async () => {
 
 describe("enviarPedido", () => {
   it("grava o pedido com o preço da tabela do cliente e reserva o crédito", async () => {
-    const pedido = await enviarPedido(db, {
-      vendedor_id: "V01",
-      cliente_id: "C001",
-      itens: [
-        { produto_id: "P001", quantidade: 10, desconto_percentual: 0 },
-        { produto_id: "P006", quantidade: 40, desconto_percentual: 5 },
-      ],
-    });
+    const { pedido } = await enviarPedido(
+      db,
+      {
+        vendedor_id: "V01",
+        cliente_id: "C001",
+        itens: [
+          { produto_id: "P001", quantidade: 10, desconto_percentual: 0 },
+          { produto_id: "P006", quantidade: 40, desconto_percentual: 5 },
+        ],
+      },
+      randomUUID(),
+    );
 
     expect(pedido.status).toBe("enviado");
     expect(pedido.total).toBe("395.54");
@@ -36,70 +41,94 @@ describe("enviarPedido", () => {
   });
 
   it("deixa aguardando aprovação quando o desconto passa da alçada do vendedor", async () => {
-    const pedido = await enviarPedido(db, {
-      vendedor_id: "V01",
-      cliente_id: "C001",
-      itens: [
-        { produto_id: "P001", quantidade: 10, desconto_percentual: 0 },
-        { produto_id: "P006", quantidade: 40, desconto_percentual: 7 },
-      ],
-    });
+    const { pedido } = await enviarPedido(
+      db,
+      {
+        vendedor_id: "V01",
+        cliente_id: "C001",
+        itens: [
+          { produto_id: "P001", quantidade: 10, desconto_percentual: 0 },
+          { produto_id: "P006", quantidade: 40, desconto_percentual: 7 },
+        ],
+      },
+      randomUUID(),
+    );
 
     expect(pedido.status).toBe("aguardando_aprovacao");
   });
 
   it("rejeita cliente de outra carteira", async () => {
-    const envio = enviarPedido(db, {
-      vendedor_id: "V02",
-      cliente_id: "C001",
-      itens: [{ produto_id: "P001", quantidade: 20, desconto_percentual: 0 }],
-    });
+    const envio = enviarPedido(
+      db,
+      {
+        vendedor_id: "V02",
+        cliente_id: "C001",
+        itens: [{ produto_id: "P001", quantidade: 20, desconto_percentual: 0 }],
+      },
+      randomUUID(),
+    );
 
     await expect(envio).rejects.toThrow("cliente_fora_da_carteira");
   });
 
   it("rejeita item fora do múltiplo informando o produto", async () => {
-    const envio = enviarPedido(db, {
-      vendedor_id: "V01",
-      cliente_id: "C001",
-      itens: [
-        { produto_id: "P001", quantidade: 20, desconto_percentual: 0 },
-        { produto_id: "P006", quantidade: 30, desconto_percentual: 0 },
-      ],
-    });
+    const envio = enviarPedido(
+      db,
+      {
+        vendedor_id: "V01",
+        cliente_id: "C001",
+        itens: [
+          { produto_id: "P001", quantidade: 20, desconto_percentual: 0 },
+          { produto_id: "P006", quantidade: 30, desconto_percentual: 0 },
+        ],
+      },
+      randomUUID(),
+    );
 
     await expect(envio).rejects.toMatchObject({ message: "fora_do_multiplo", produto_id: "P006" });
   });
 
   it("rejeita pedido abaixo do mínimo", async () => {
-    const envio = enviarPedido(db, {
-      vendedor_id: "V01",
-      cliente_id: "C001",
-      itens: [{ produto_id: "P001", quantidade: 10, desconto_percentual: 0 }],
-    });
+    const envio = enviarPedido(
+      db,
+      {
+        vendedor_id: "V01",
+        cliente_id: "C001",
+        itens: [{ produto_id: "P001", quantidade: 10, desconto_percentual: 0 }],
+      },
+      randomUUID(),
+    );
 
     await expect(envio).rejects.toThrow("abaixo_do_pedido_minimo");
   });
 
   it("rejeita desconto em mais de um item", async () => {
-    const envio = enviarPedido(db, {
-      vendedor_id: "V01",
-      cliente_id: "C001",
-      itens: [
-        { produto_id: "P001", quantidade: 10, desconto_percentual: 2 },
-        { produto_id: "P006", quantidade: 40, desconto_percentual: 3 },
-      ],
-    });
+    const envio = enviarPedido(
+      db,
+      {
+        vendedor_id: "V01",
+        cliente_id: "C001",
+        itens: [
+          { produto_id: "P001", quantidade: 10, desconto_percentual: 2 },
+          { produto_id: "P006", quantidade: 40, desconto_percentual: 3 },
+        ],
+      },
+      randomUUID(),
+    );
 
     await expect(envio).rejects.toThrow("desconto_em_mais_de_um_produto");
   });
 
   it("rejeita pedido acima do crédito sem gravar nada", async () => {
-    const envio = enviarPedido(db, {
-      vendedor_id: "V01",
-      cliente_id: "C002",
-      itens: [{ produto_id: "P001", quantidade: 20, desconto_percentual: 0 }],
-    });
+    const envio = enviarPedido(
+      db,
+      {
+        vendedor_id: "V01",
+        cliente_id: "C002",
+        itens: [{ produto_id: "P001", quantidade: 20, desconto_percentual: 0 }],
+      },
+      randomUUID(),
+    );
 
     await expect(envio).rejects.toThrow("credito_insuficiente");
     expect(await creditoUtilizado("C002")).toBe("11650.00");
@@ -117,7 +146,7 @@ describe("enviarPedido", () => {
     await Promise.all(Array.from({ length: envios }, () => db.execute(sql`select 1`)));
 
     const resultados = await Promise.allSettled(
-      Array.from({ length: envios }, () => enviarPedido(db, pedido)),
+      Array.from({ length: envios }, () => enviarPedido(db, pedido, randomUUID())),
     );
 
     const aceitos = resultados.filter((resultado) => resultado.status === "fulfilled");
@@ -128,6 +157,63 @@ describe("enviarPedido", () => {
       expect(rejeitado.reason.message).toBe("credito_insuficiente");
     }
     expect(await creditoUtilizado("C002")).toBe("11953.48");
+  });
+
+  describe("idempotência pela chave do envio", () => {
+    const pedido = {
+      vendedor_id: "V01",
+      cliente_id: "C001",
+      itens: [{ produto_id: "P001", quantidade: 20, desconto_percentual: 0 }],
+    };
+
+    async function pedidosDoCliente(clienteId: string) {
+      return db.select().from(pedidos).where(eq(pedidos.cliente_id, clienteId));
+    }
+
+    it("reenvio com a mesma chave devolve o pedido existente sem gravar nem debitar de novo", async () => {
+      const chave = randomUUID();
+      const antes = (await pedidosDoCliente("C001")).length;
+
+      const primeiro = await enviarPedido(db, pedido, chave);
+      const reenvio = await enviarPedido(db, pedido, chave);
+
+      expect(primeiro.criado).toBe(true);
+      expect(reenvio.criado).toBe(false);
+      expect(reenvio.pedido).toEqual(primeiro.pedido);
+      expect(await pedidosDoCliente("C001")).toHaveLength(antes + 1);
+      expect(await creditoUtilizado("C001")).toBe("1738.00");
+    });
+
+    it("envios simultâneos com a mesma chave gravam um pedido só", async () => {
+      const chave = randomUUID();
+      const antes = (await pedidosDoCliente("C001")).length;
+
+      const resultados = await Promise.all(
+        Array.from({ length: 5 }, () => enviarPedido(db, pedido, chave)),
+      );
+
+      expect(resultados.filter((resultado) => resultado.criado)).toHaveLength(1);
+      expect(await pedidosDoCliente("C001")).toHaveLength(antes + 1);
+      expect(await creditoUtilizado("C001")).toBe("1738.00");
+    });
+
+    it("chaves diferentes gravam pedidos diferentes", async () => {
+      const antes = (await pedidosDoCliente("C001")).length;
+
+      await enviarPedido(db, pedido, randomUUID());
+      await enviarPedido(db, pedido, randomUUID());
+
+      expect(await pedidosDoCliente("C001")).toHaveLength(antes + 2);
+    });
+
+    it("rejeita a mesma chave do vendedor em pedido de outro cliente", async () => {
+      const chave = randomUUID();
+      await enviarPedido(db, pedido, chave);
+
+      const envio = enviarPedido(db, { ...pedido, cliente_id: "C004" }, chave);
+
+      await expect(envio).rejects.toBeInstanceOf(ChaveIdempotenciaEmUsoError);
+    });
   });
 });
 

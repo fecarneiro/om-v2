@@ -2,7 +2,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import swaggerUi from "swagger-ui-express";
 import { ZodError } from "zod";
 import { openapi } from "./openapi.js";
-import { PedidoInvalidoError } from "./pedidos/pedidos.errors.js";
+import { ChaveIdempotenciaEmUsoError, PedidoInvalidoError } from "./pedidos/pedidos.errors.js";
 import { pedidosRoutes } from "./pedidos/pedidos.routes.js";
 import { produtosRoutes } from "./produtos/produtos.routes.js";
 import { vendedoresRoutes } from "./vendedores/vendedores.routes.js";
@@ -23,6 +23,9 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 
   if (err instanceof PedidoInvalidoError)
     return res.status(422).json({ codigo: err.message, produto_id: err.produto_id });
+
+  if (err instanceof ChaveIdempotenciaEmUsoError)
+    return res.status(409).json({ codigo: err.message });
 
   console.error(err);
   res.status(500).json({ codigo: "erro_interno" });

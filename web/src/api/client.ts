@@ -21,10 +21,15 @@ export async function get<S extends z.ZodType>(
   return lerResposta(await fetch(`/api${caminho}`, { signal: opcoes.signal }), schema);
 }
 
-export async function post<S extends z.ZodType>(caminho: string, corpo: unknown, schema: S) {
+export async function post<S extends z.ZodType>(
+  caminho: string,
+  corpo: unknown,
+  schema: S,
+  opcoes: { headers?: Record<string, string> } = {},
+) {
   const resposta = await fetch(`/api${caminho}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...opcoes.headers },
     body: JSON.stringify(corpo),
   });
   return lerResposta(resposta, schema);

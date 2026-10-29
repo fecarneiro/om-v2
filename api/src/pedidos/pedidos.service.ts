@@ -22,9 +22,45 @@ import {
   tabelas_preco_itens,
   vendedores,
 } from "../db/schema.js";
-import { PedidoInvalidoError } from "./pedidos.errors.js";
+import { ChaveIdempotenciaEmUsoError, PedidoInvalidoError } from "./pedidos.errors.js";
 
-export async function enviarPedido(db: Db, input: NovoPedido): Promise<PedidoEnviado> {
+type Transacao = Parameters<Parameters<Db["transaction"]>[0]>[0];
+
+const colunasPedido = {
+  id: pedidos.id,
+  cliente_id: pedidos.cliente_id,
+  vendedor_id: pedidos.vendedor_id,
+  data: pedidos.data,
+  status: pedidos.status,
+};
+
+async function pedidoJaEnviado(
+  tx: Transacao,
+  input: NovoPedido,
+  chaveIdempotencia: string,
+): Promise<PedidoEnviado | undefined> {
+  const [pedido] = await tx
+    .select(colunasPedido)
+    .from(pedidos)
+    .where(
+      and(
+        eq(pedidos.vendedor_id, input.vendedor_id),
+        eq(pedidos.chave_idempotencia, chaveIdempotencia),
+      ),
+    );
+  if (!pedido) return undefined;
+
+  if (pedido.cliente_id !== input.cliente_id) throw new ChaveIdempotenciaEmUsoError();
+
+  const itens = await tx.select().from(pedidos_itens).where(eq(pedidos_itens.pedido_id, pedido.id));
+  return { ...pedido, total: totalLiquidoDoPedido(itens).toFixed(2) };
+}
+
+export async function enviarPedido(
+  db: Db,
+  input: NovoPedido,
+  chaveIdempotencia: string,
+): Promise<{ pedido: PedidoEnviado; criado: boolean }> {
   return db.transaction(async (tx) => {
     const [linha] = await tx
       .select({ cliente: clientes, vendedor: vendedores })
@@ -34,6 +70,9 @@ export async function enviarPedido(db: Db, input: NovoPedido): Promise<PedidoEnv
       .for("update", { of: clientes });
 
     if (!linha) throw new PedidoInvalidoError("cliente_nao_encontrado");
+
+    const jaEnviado = await pedidoJaEnviado(tx, input, chaveIdempotencia);
+    if (jaEnviado) return { pedido: jaEnviado, criado: false };
 
     const { cliente, vendedor } = linha;
     if (!pertenceACarteira(cliente, input.vendedor_id))
@@ -87,8 +126,9 @@ export async function enviarPedido(db: Db, input: NovoPedido): Promise<PedidoEnv
         vendedor_id: vendedor.id,
         data: sql`current_date`,
         status,
+        chave_idempotencia: chaveIdempotencia,
       })
-      .returning();
+      .returning(colunasPedido);
 
     await tx.insert(pedidos_itens).values(itens.map((item) => ({ ...item, pedido_id: pedido.id })));
 
@@ -97,7 +137,7 @@ export async function enviarPedido(db: Db, input: NovoPedido): Promise<PedidoEnv
       .set({ credito_utilizado: sql`${clientes.credito_utilizado} + ${total.toFixed(2)}` })
       .where(eq(clientes.id, cliente.id));
 
-    return { ...pedido, total: total.toFixed(2) };
+    return { pedido: { ...pedido, total: total.toFixed(2) }, criado: true };
   });
 }
 
